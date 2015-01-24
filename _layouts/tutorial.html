@@ -17,7 +17,6 @@
       }
     </style>
 
-    <!-- Le fav and touch icons -->
     <link rel="shortcut icon" href="/assets/ico/s5.png">
 
   </head>
@@ -27,16 +26,20 @@
 
     <div class="container">
       <div class="row">
-        <div class="col-md-9">
+        <div class="col-md-9" role="main">
         {{content}}
         </div>
-        <div class="col-md-3">
-          <ul class="nav">
-            <li>
-              <A HREF="#start">Start</A>
-              <A HREF="#setup">Setup</A>
-            </li>
-          </ul>
+        <div class="col-md-3" role="complementary">
+          <nav class="affix">
+            <ul class="nav">
+              <li>
+                <A HREF="#start">Start</A>
+                <A HREF="#setup">Setup</A>
+                <A HREF="#simple-server">A Simple Server</A>
+                <A HREF="#database">Add A Database</A>
+              </li>
+            </ul>
+          </nav>
         </div>
       </div> <!-- row -->
 

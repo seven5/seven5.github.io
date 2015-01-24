@@ -58,3 +58,4 @@ is a terrible name for as many reasons as you have money to pay them.
 Our mascot is one of the gargoyles from _Notre Dame_ because he looks
 threatening. We hope to scare away some javascript people.
 
+[Go to the tutorial](/tutorial.html)
