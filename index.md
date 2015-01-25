@@ -33,6 +33,8 @@ the well-meaning but misinformed. Seven5 aims to make it
 reasonable to build the web portion of your app--it's never going to 
 be "easy".  There is no easy way.
 
+<a name="modern-web-applications"></a>
+
 ## Modern Web Applications
 Modern web applications are highly interactive and leverage the browser's
 capabilities.  Browsers are already deployed to billions of 

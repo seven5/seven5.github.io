@@ -75,6 +75,11 @@ $ git checkout lesson-setup
 $ cat enable-tutorial
 {% endhighlight %}
 
+> After the "git checkout" command you get a long-winded warning about 
+> being in "detached head state".  This is normal, can be ignored, and more
+> permanent solution--creating a new branch for your work--will be explained
+> in future lessons.
+
 and examine the output of the last command.  That is the _enable script_
 and you should put in this file any "local" setup that you need to do
 have the this tutorial work, but also to not break other projects you 
@@ -155,6 +160,7 @@ is the contents of the `Godeps` directory.
 When doing development, the pattern for dealing with godeps is:
 
 * go get -u blah
+* rm -rf Godeps
 * godep save myprogram
 * [test myprogram to make sure everything is ok]
 * git add -A Godeps
@@ -163,6 +169,10 @@ When doing development, the pattern for dealing with godeps is:
 This "staging" area allows you to experiment with different version of various
 packages and then "godep save" a snapshot.  Once you are satisfied with the
 snapshot you commit that to the repository.
+
+Because of the use of the external staging directory, 
+it is *always* safe to delete the Godeps directory and "try again" 
+with "godep save" if something gets messed up in your project.
 
 <a name="simple-server"></a>
 
@@ -204,6 +214,10 @@ help initialize the app.  The variable `FRESNO_TEST` is *only* set in
 the case of local development.
 
 ## Create heroku app
+
+> It would be great if somebody could submit a pull request that
+> has deployment support for [dokku](http://progrium.viewdocs.io/dokku)
+> running locally or [tutum](https://www.tutum.co).
 
 You'll need to create a new heroku app so you can deploy your copy of
 fresno.  You may need to login to authenticate your account with the
@@ -267,6 +281,14 @@ remote:        https://damp-sierra-7161.herokuapp.com/ deployed to Heroku
 You'll notice that the branch "my-simple-server" is being pushed to "master"
 on heroku because heroku only builds on pushes to master.  
 
+> If you see an error like this:
+<pre>
+! [rejected]        my-simple-server -> master (non-fast-forward)
+error: failed to push some refs to 'https://git.heroku.com/damp-sierra-7161.git'
+</pre>
+> it is usually because you have re-written your git history and you need
+> to use force (-f) with the git push to get heroku to accept the push.
+
 You should now be able to visit "https://damp-sierra-7161.herokuapp.com/" 
 (with your app's name) and see the same output that you receive locally.
 
@@ -304,6 +326,9 @@ This document assumes postgres version 9.3, but other versions in the
 9.x series will likely work.
 
 ## Add postgres your heroku app
+
+> It would be great if somebody could try to get these applicaitons work
+> under mysql since both qbs and heroku support that relational system.
 
 You can add the production database to your heroku app like this:
 
@@ -593,7 +618,7 @@ must be called out to Qbs if the "pk" is a string, and it is good practice
 to do it in any case, even though Qbs would default to choosing the 
 int64 field Id for Post.  
 
-You'll notice that we do a join on the post's author to a user record.  
+You'll notice that we do a join on the post's author to a user record.
 This is done by default by Qbs at retrieval-time and we've just accepted
 that default here and told Qbs where to put the joined record.
 
@@ -662,6 +687,12 @@ $ curl https://damp-sierra-7161.herokuapp.com/rest/post/1
 You will need to adjust the application name and run migrations on heroku's
 database if you haven't already.
 
+> If you see an error like this when you push to heroku: 
+<pre>
+remote:  !     A .godir is required. For instructions:
+remote:  !     http://mmcgrana.github.io/2012/09/getting-started-with-go-on-heroku
+</pre>
+> it usually means you forgot to check in your Godeps directory.
 
 ## Understanding rest resource "types"
 
@@ -675,9 +706,10 @@ you can use a
 [UDID](http://en.wikipedia.org/wiki/Universally_unique_identifier) written
 in the standard hex format, such as "df12ba96-71c7-436d-b8f6-2d157d5f8ff1".
 
-If you look in the "main" of the fresno application now, you can see where
-the connection is made between a wire type and a resource implementation that
-implements methods (logically) for that wire type
+If you look in the "main" of the fresno application now (`fresno/main.go`),
+you can see where the connection is made between a wire type and a 
+resource implementation that implements methods (logically) for that 
+wire type:
 
 {% highlight go %}
 
@@ -718,12 +750,16 @@ The use of the
 [QbsWrapFind](https://gowalker.org/github.com/seven5/seven5#QbsWrapFind) is
 a means of expressing that you want to use Qbs in the implementation of the
 method and would like a properly initialized Qbs instance to be part of 
-your method signature.  This also implies the default behavior for 
-transaction rollbacks should the implementation panic().
+your method signature. 
+
+The use of "QbsWrapFind" or othe "QbsWrap*" methods  also implies the 
+default behavior for transaction rollbacks should the implementation
+panic().  In general, if you use the QbsWrap* wrapper functions you should be 
+able to ignore transactions.
 
 ## Return values and wire types
 
-If you look in `resource/user_record.go` you'll see the other implemented
+If you look in `resource/user_record.go` you'll see the only implemented
 method is "FindQbs".  This method's signature is interesting:
 
 {% highlight go %}
@@ -751,6 +787,219 @@ It is perhaps unsurprising that about half of the implementation of
 the FindQbs method in both UserRecord and Post is error checking and
 returning.
 
+
+<a name="static-site"></a>
+
+# A static site
+
+Let's add the ability send fixed, unchanging files back from the
+server to the client. 
+
+## Preparation for this lesson
+In the `TUTROOT/src/tutorial` directory:
+
+{% highlight bash %}
+$ git checkout lesson-static-site
+$ godep save tutorial/...
+$ git checkout -b my-static-site
+$ git add -A .
+$ git commit -a -m "add godeps"
+{% endhighlight %}
+
+You'll need to have a working copy of "make" installed on your system as
+demonstrated here with the "which" command. If you get no output, its
+not installed:
+
+{% highlight bash %}
+$ which make
+/usr/bin/make
+{% endhighlight %}
+
+If you are on OSX, you have use the app store to install "XCode" application
+then navigate to XCode -> Preferences -> Downloads and install the component
+named "command line tools".  On most linux systems make is installed by
+default but on Ubuntu you may need to install the (enormous) package
+"build-essential".
+
+## Static files and don't repeat yourself
+Based on the doctrine of 
+[DRY](http://en.wikipedia.org/wiki/Don't_repeat_yourself), Seven5 offers
+some tooling to help you generate web pages.  "Vhat?!? Generatung
+veb kontent [_ist verboten_](/index.html#modern-web-pages)!?!"   As was
+stated previously, this content is not generated by the server itself,
+but rather is built completely before the server runs, so it does not
+fall foul of the "no generating content" rule.
+
+An easy way to insure that content does not break the prescription
+against server-generated HTML is to ask if the server can (correctly) generate a [304](http://httpstatusdogs.com/304-not-modified) 
+[Not Modified](http://httpstatus.es/304) response to a web request for
+that html content.  The go default "serve file"
+functions are careful to generate 304 for files that are just sitting in
+a directory so, relax, everything is fine.
+
+## pagegen 
+HTML files, and to some extent CSS, files are notorious for having 
+repititon in them. Repitition makes things hard to maintain because you
+can't make any change "in just one place."  pagegen is a tool that
+lets you keep everything [OAOO](http://c2.com/xp/OnceAndOnlyOnce.html).
+
+The program pagegen is in the directory `pagegen` which sets some 
+[options](https://gowalker.org/github.com/seven5/seven5#PagegenOpts)
+and then calls the 
+[main](https://gowalker.org/github.com/seven5/seven5#PagegenOpts_Main)
+provided by Seven5.  This pattern of providing an "entry point" that
+you can wrap with your own "main()" is used both with pagegen and 
+migrations in Seven5.  In both cases it is arranged this way because
+Seven5 has "most" of the logic but allows you to provide your own
+"semantics".
+
+If you examine `pagegen/main.go` you'll see a couple of these semantics:
+
+{% highlight go %}
+
+//utility function for generating current year for footers
+func year() int {
+	return time.Now().Year()
+}
+
+//useful in page generation for generating links
+func urlgen() shared.URLGenerator {
+	return shared.URLGen
+}
+
+//this table adds functionality to the "pipelines" you can use in
+//go templates.
+var funcs = map[string]interface{}{
+	"year":   year,
+	"urlgen": urlgen,
+}
+
+{% endhighlight %}
+
+These two 
+[functions](http://golang.org/pkg/text/template/#example_Template_func) 
+are added to the 
+[template processing](http://golang.org/pkg/text/template/) that is done
+by pagegen. 
+
+### Building pagegen
+
+{% highlight bash %}
+$ godep go install tutorial/...
+{% endhighlight %}
+
+The command above builds all the tools (migrate and pagegen) and the fresno
+application itself.
+
+## Building index.html
+
+The directory `pages` has all the static file content. You can go into
+the `pages` directory and type `make` to build the content:
+
+{% highlight bash %}
+$ make
+pagegen --support=support --dir=template --start=index.html --json=index.json > ../static/en/web/index.html
+{% endhighlight %}
+
+There is only one page at the moment, but let's examine that command that make
+ran carefully.  The "base" html file is `pages/template/index.html` and 
+the json data bundle for that page is `pages/template/index.json`.  
+
+The `pages/template/index.html` file is:
+
+{% highlight html %}
+<!DOCTYPE html>
+<html lang="en">
+	{%raw%}{{template "BOOTSTRAP_HEAD_SECTION" .}}{%endraw%}
+
+<body>
+	<div class="container">
+
+    <h3>Freso is a blog engine</h3>
+
+	 {%raw%} {{template "MISC_FOOTER" .}} {%endraw%}
+	
+  </div> <!--container -->
+	
+	{%raw%} {{template "MISC_JSLOAD" .}}{%endraw%}
+</body>
+</html>
+{% endhighlight %}
+
+The `pages/template/index.json` file is:
+{% highlight json %}
+{
+	"title":"Fresno",
+	"css_page": "/fixed/index.css"
+}
+{% endhighlight %}
+
+The "template" for our index.html page is "merged" with this json blob.  
+The make command above referenced the support directory 
+`pages/template/support`.  _All_ the templates found in this directory
+(files ending in ".tmpl").  You can see the definition of the referenced
+template BOOTSTRAP_HEAD_SECTION in `pages/template/support/bootstrap.tmpl`
+and the templates MISC_FOOTER and MISC_JSLOAD in 
+`pages/template/support/misc.tmpl`.  
+
+It should be noted that the calls to these "partial templates" are passed
+the argument "." (dot).  This is set to the root object of the json content
+(see `pages/template/index.json` above) at the start of processing.  So
+when the bootstrap template is reached, it will have access to the title
+and css page associated with this content.
+
+If we look at the definition of MISC_FOOTER in 
+`pages/template/support/misc.tmpl`:
+
+{% highlight html %}
+
+{%raw%} {{define "MISC_FOOTER"}}{%endraw%}
+  <hr>
+
+  <footer>
+    <p style="font-variant:small-caps;">&copy; Fresno Rocked The House In {%raw%}{{year}}{%endraw%}</p>
+  </footer>
+{%raw%}{{end}}{%endraw%}
+{% endhighlight %}
+
+This is the "year" function defined in `pagegen/main.go` and shows you how
+you can call arbitrary go code from within a template.  Note that this code
+must be defined/built before the server is run.
+
+All this work for a single output file is overkill at this point, but in
+future lessons as we add more pages, and more complex pages, the advantage
+of don't repeat yourself will become clear.  The careful will have noticed
+the reference to `pages/template/support/json_helper.tmpl` in the source
+code of `pagegen/main.go` and that this file is empty.  This template is
+used to prevent repetition in the _json blobs themselves_ that are used 
+to supply data the pages.  We don't need this yet, so the file is empty.
+
+## The static directory
+
+The output of pagegen, notably `static/en/web/index.html` in this lesson,
+is placed in the `static` subdirectory.  That directory _must_ be checked
+into git as it is the content your web server will respond with when 
+queried for "/".  In other words, `static/en/web/index.html` will be
+visible as "/en/web/index.html" when the server is running.
+
+There are files in `static/fixed` that correspond to assets, like images
+or css files, that don't change depending on the language of the user's 
+browser or browsing device. Although we only support one language ("en") 
+and one device ("web") right now, the content that might be dependent on 
+these variables is separated into subdirectories.
+
+## Run and test the static files
+
+You should be comfortable enough now to build the fresno applications anytime
+with "godep go install tutorial/...", so we won't call it out anymore.
+
+From now on you should assume that you should run "fresno" from the primary
+tutorial directory (`TUTROOT/src/tutorial` or the parent of `static`) because
+this is how your application will be run on production.
+
+You can view the 
+[index page](http://localhost:5000/en/web/index.html) in your web
+browser on the local machine or [heroku](https://damp-sierra-7161.herokuapp.com/en/web/index.html).
 
 
 
