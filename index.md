@@ -34,8 +34,8 @@ be "easy".  There is no easy way.
 Modern web applications are highly interactive and leverage the browser's
 capabilities.  Browsers are already deployed to billions of 
 users, it seems silly, even wasteful, to not use them.
-Modern web applications, under  no circumstances "generate" html content.
-If you want server-side templating language, these are rife--go elsewhere. 
+Modern web applications, under  no circumstances, _generate_ html content.
+If you want a server-side templating language, these are rife--go elsewhere. 
 Mustache and liquid may be small, but they are doing it wrong. 
 
 It is one of the few  major flaws  of the  go standard library that it included html templating.  Seven5 expects you to generate all the 
@@ -55,7 +55,7 @@ It's called Seven5 because I started writing it when I lived in Paris, France.
 All the zipcodes of Paris proper start with "75".  Names are not very 
 important.  You can hire many name consultants who will tell you "go"
 is a terrible name for as many reasons as you have money to pay them.
-Our mascot is one of the gargoyles from _Notre Dame_ because he looks
+Seven5's mascot is one of the gargoyles from _Notre Dame_ because he looks
 threatening. We hope to scare away some javascript people.
 
 [Go to the tutorial](/tutorial.html)

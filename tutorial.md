@@ -145,7 +145,10 @@ Note that the build command builds using godep, not go directly.  This means
 that you are using the vendored godeps in the `Godeps/workspace/_src`
 directory.  If you for some reason want to _not_ use the vendored 
 godeps, your enable script sets `GOPATH` so just 
-"go install tutorial/fresno-dummy-main" will work.
+"go install tutorial/fresno-dummy-main" will work.  Use of this technique
+is not recommended as you want to be building/running locally on
+precisely the same things that are going to be used in production, which
+is the contents of the `Godeps` directory.
 
 ### Godep workflow in Seven5
 
@@ -153,7 +156,7 @@ When doing development, the pattern for dealing with godeps is:
 
 * go get -u blah
 * godep save myprogram
-* test myprogram to make sure everything is ok
+* [test myprogram to make sure everything is ok]
 * git add -A Godeps
 * git commit
 
@@ -166,12 +169,13 @@ snapshot you commit that to the repository.
 # Creating And Deploying A Simple Server
 
 For this lesson and all the ones following, we'll assume that you can
-get the godeps set up correctly (it was explained in the previous lesson
-if you are jumping around).  These are not checked into the 
-tutorial source code and anytime you change lessons, you'll probably
-have to "go get" some dependencies and "godep save" to copy them into
-the lesson.  The go compiler will quickly tell you what dependencies
-you need and don't have if you forget!
+get the godeps set up correctly (it was explained in the 
+[previous lesson](#setup) if you are jumping around).  
+These are not checked into the tutorial source code and 
+anytime you change lessons, you'll probably have to "go get" 
+some dependencies and/or "godep save" to copy them into
+the lesson working tree.  The go compiler will quickly tell you 
+what dependencies you need and don't have if you forget!
 
 ## Preparation for this lesson
 
@@ -190,7 +194,7 @@ $ godep save tutorial/fresno
 You'll need to insure that you have the [heroku toolbelt](https://toolbelt.heroku.com) installed on your system.  You should have an account with
 heroku, try using "heroku login"
 
-## Environment Variables
+## Environment variables
 
 All configuration of Seven5 applications is done through environment
 variables.  This makes them [twelve factorish](http://12factor.net) and
@@ -365,6 +369,8 @@ we are now ready to start doing some real development.
 
 ## Preparation for this lesson
 
+In the `TUTROOT/src/tutorial` directory:
+
 {% highlight bash %}
 $ git checkout lesson-migration
 $ godep save tutorial/...
@@ -435,7 +441,7 @@ func oneDown(tx *sql.Tx) error {
 {% endhighlight %}
 
 If you look at the up migration, you will notice that the "oneUp" migration
-creates to sample users and sample posts.  This is handy for running tests
+creates two sample users and sample posts.  This is handy for running tests
 because you can just assume that if the database is there, these users
 and posts are present.
 
@@ -445,9 +451,9 @@ When create a table in SQL, you have to create it with the structure
 (data types and names) that will mesh with Qbs. Generally, this fairly
 straightforward as the names are converted from camel case in go to
 snake case for postgres.  However, you may need to experiment with
-the column types to make sure that the structures in go match up them.
-This is less burdensome than you'd expect because the set of types that
-you can express in the go structures is limited.
+the column types to make sure that the structures in go mate correctly
+with them. This is less burdensome than you'd expect because the set of 
+types that you can express in the go structures is limited.
 
 The next lesson will discuss what structures in go correspond to the
 tables created.
@@ -461,6 +467,8 @@ $ godep go install tutorial/migrate
 $ migrate --up
 [migrator] attempting migration UP 001
 001 UP migrations performed
+$ migrate status
+current migration number is 001
 {% endhighlight %}
 
 You may find it interesting to use "psql" (see [previous lesson](#psql)) 
@@ -477,14 +485,44 @@ at earliest migration, nothing to do
 {% endhighlight %}
 
 Again, you may find it interesting to look inside the database at the result
-of doing "migrate --down".   There options you can pass to run a specific
-number of up or down migrations with the "--step" option.
+of doing "migrate --down".   There are options you can pass to the 
+migrate program to run a specific number of up or down migrations with 
+the "--step" flag.
 
-## Building and running the migrations on heroku
+## Building and running the migrations on Heroku
 
 If you push this version of the code to heroku, you can get a bash shell on
 the remote (heroku) machine and then use the migrations just as with the 
 local case.
 
+{% highlight bash %}
+$ git push -f heroku my-migration:master
+$ heroku run bash
+Running `bash` attached to terminal... up, run.4328
+$ migrate status
+current migration number is 000
+$ migrate --up
+[migrator] attempting migration UP 001
+001 UP migrations performed
+
+{% endhighlight %}
+
+<a name="simple-rest"></a>
+
+# Serve Up Some Data Through A REST API
+
+We've got a web server and a database that has some content in it, so 
+let's create a REST API to access the "user_record" and "post" tables.
 
 
+## Preparation for this lesson
+
+In the `TUTROOT/src/tutorial` directory:
+
+{% highlight bash %}
+$ git checkout lesson-simple-rest
+$ godep save tutorial/...
+$ git checkout -b my-migration
+$ git add -A .
+$ git commit -a -m "add godeps"
+{% endhighlight %}
