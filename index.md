@@ -21,6 +21,9 @@ brutal punishment. You like  programming in  static languages, and
 [go](http://golang.com)  is currently the best combination of a 
 static language, simplicity, and big built-in library.
 
+<a role="button" href="/tutorial.html" class="btn btn-primary">
+I'm Convinced! Take Me To The Tutorial!</a>
+
 ## The Web
 Seven5 is toolkit for building modern web applications.  The web, in
 and of itself, is not terrible.  It's a great way to let lots of people
@@ -58,4 +61,5 @@ is a terrible name for as many reasons as you have money to pay them.
 Seven5's mascot is one of the gargoyles from _Notre Dame_ because he looks
 threatening. We hope to scare away some javascript people.
 
-[Go to the tutorial](/tutorial.html)
+<a role="button" href="/tutorial.html" class="btn btn-primary">
+Read The Tutorial</a>

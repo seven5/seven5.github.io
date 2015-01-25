@@ -445,6 +445,8 @@ creates two sample users and sample posts.  This is handy for running tests
 because you can just assume that if the database is there, these users
 and posts are present.
 
+<a name="caveat-data-type"></a>
+
 ### Caveat (Qbs data type matching)
 
 When create a table in SQL, you have to create it with the structure
@@ -522,7 +524,233 @@ In the `TUTROOT/src/tutorial` directory:
 {% highlight bash %}
 $ git checkout lesson-simple-rest
 $ godep save tutorial/...
-$ git checkout -b my-migration
+$ git checkout -b my-simple-rest
 $ git add -A .
 $ git commit -a -m "add godeps"
 {% endhighlight %}
+
+## Resources
+
+[Resources](http://restful-api-design.readthedocs.org/en/latest/resources.html) 
+are the building blocks of 
+[RESTful APIs](http://restful-api-design.readthedocs.org/en/latest/). It is
+customary to name your resource implementations in Seven5 applications
+as "FooResource" in the package `resource` if this provides the API implementation of the noun "foo". You can see the implementations of
+"UserRecordResource" and "PostResource" in the files `resource/user_record.go`
+and `resource/post.go`, respectively.  Note that these are in different
+package typically from your main (`fresno/main.go`) so they must be
+capitalized.
+
+The objects to be exchanged over the wire between client and sever, 
+referred to as _wire types_ in Seven5, are represented as go structures
+in the `shared` package.  Typically, these structures contain only very
+simple data types as fields because serializing complex types to json
+can be problematic.  Because our application is simple now, we are *also*
+going to use these same structures as the data to be represented in
+the database.  This double duty is nice, because it insures that the 
+values exchanged over the wire are "in sync" with the underlying data
+model, but more complex application typically need to separate the
+storage layer (represented by structures used with Qbs and the database)
+and the wire representation (that is shared between client and server).
+
+## The wire types
+
+The wire types are the "nouns" in the sense of RESTful API design. 
+For this lesson, these are are in `shared/post.go` and 
+`shared/user_record.go` and coded as uppercase, singular nouns ("Post").
+Because they are in a separate package and because they must be
+serializable with "encoding/json" the fields must be uppercase also.
+
+Here are the two wire types:
+{% highlight go %}
+
+type UserRecord struct {
+	UserUdid  string `qbs:"pk"`
+	FirstName string
+	LastName  string
+	EmailAddr string
+	Password  string
+	Disabled  bool
+	Admin     bool
+}
+
+
+type Post struct {
+	Id         int64 `qbs:"pk"`
+	Title      string
+	Updated    time.Time
+	Created    time.Time
+	Text       string
+	AuthorUdid string `qbs:"fk:Author"`
+	Author     *UserRecord
+}
+{% endhighlight %}
+
+As we discussed in the [previous lesson](#caveat-data-type) the fields
+in the structures "UserRecord" and "Post" must match up to the columns
+in the database tables "user_record" and "post".  The primary key field
+must be called out to Qbs if the "pk" is a string, and it is good practice
+to do it in any case, even though Qbs would default to choosing the 
+int64 field Id for Post.  
+
+You'll notice that we do a join on the post's author to a user record.  
+This is done by default by Qbs at retrieval-time and we've just accepted
+that default here and told Qbs where to put the joined record.
+
+## Building and testing locally
+
+Compile and start the server running locally:
+
+{% highlight bash %}
+$ godep go install tutorial/...
+$ fresno
+{% endhighlight %}
+
+In another shell window, try:
+
+{% highlight bash %}
+
+$ curl localhost:5000/rest/userrecord/515f7619-8ea2-427f-8cf3-7a9201c747dd
+{
+ "UserUdid": "515f7619-8ea2-427f-8cf3-7a9201c747dd",
+ "FirstName": "Mary",
+ "LastName": "Jones",
+ "EmailAddr": "mary@example.com",
+ "Password": "",
+ "Disabled": false,
+ "Admin": true
+}
+$ curl localhost:5000/rest/userrecord/blah
+did not find blah
+$ curl localhost:5000/rest/post/1
+{
+ "Id": 1,
+ "Title": "first post!",
+ "Updated": "2015-01-24T16:33:16.970088-08:00",
+ "Created": "2015-01-24T16:33:16.970088-08:00",
+ "Text": "This is the first post on the site!",
+ "AuthorUdid": "df12ba96-71c7-436d-b8f6-2d157d5f8ff1",
+ "Author": {
+  "UserUdid": "df12ba96-71c7-436d-b8f6-2d157d5f8ff1",
+  "FirstName": "Joe",
+  "LastName": "Smith",
+  "EmailAddr": "joe@example.com",
+  "Password": "",
+  "Disabled": false,
+  "Admin": false
+ }
+}
+{% endhighlight %}
+
+If you are curious, you may find it interesting to try changing the
+curl command to "curl -v" so you can see the details of the error
+messages, headers, etc.
+
+## Building and testing on heroku
+
+The build and test cycle for heroku won't be called out any further in
+this document unless there is a deviation from the "normal" deployment
+of:
+
+{% highlight bash %}
+$ git push -f heroku my-simple-rest:master
+[deployment info]
+$ curl https://damp-sierra-7161.herokuapp.com/rest/post/1
+[json output]
+{% endhighlight %}
+
+You will need to adjust the application name and run migrations on heroku's
+database if you haven't already.
+
+
+## Understanding rest resource "types"
+
+Seven5 exposes two different means of addressing a rest resource.  The first
+is the "traditional" way with a positive integer, as in the example above
+with the "Post" wire type.  This is the normal way of accessing resources in
+a RESTful API.  There are some situations where the "pretty" urls such as
+"/rest/post/2" is not desirable because there is a security consideration
+or you simply do not wish these to be "guessable".   For this situation,
+you can use a 
+[UDID](http://en.wikipedia.org/wiki/Universally_unique_identifier) written
+in the standard hex format, such as "df12ba96-71c7-436d-b8f6-2d157d5f8ff1".
+
+If you look in the "main" of the fresno application now, you can see where
+the connection is made between a wire type and a resource implementation that
+implements methods (logically) for that wire type
+
+{% highlight go %}
+
+	base.ResourceSeparateUdid("userrecord",
+		&shared.UserRecord{},
+		nil, //index
+		s5.QbsWrapFindUdid(&resource.UserRecordResource{}, store),
+		nil, //post
+		nil, //put
+		nil) //delete
+
+	base.ResourceSeparate("post",
+		&shared.Post{},
+		nil, //index
+		s5.QbsWrapFind(&resource.PostResource{}, store),
+		nil, //post
+		nil, //put
+		nil) //delete
+
+{% endhighlight %}
+
+"base" in the above code snippets is a Seven5 
+[BaseDispatcher](https://gowalker.org/github.com/seven5/seven5#BaseDispatcher)
+that will parse an incoming request for a URL and dispatch it to the 
+appropriate resource or subresource.  The dispatcher has different, but
+similar looking methods, "ResourceSeparateUdid" and "ResourceSeparate" that
+indicate if you want to use UDID-based resources or standard integer ones.
+
+The first parameter given to both of these methods is the portion of the URL
+space that this resource occupies. This should be singular and lower case;
+omitting underscores is also preferred.  The second parameter is the 
+resource's implementation type, and then there are five separate (thus the
+"separate" in "ResourceSeparate") methods that provide the implementation
+of the REST methods index, find, post, put, and delete. Each of these
+has a unique method signature except put and delete which are the same.
+
+The use of the 
+[QbsWrapFind](https://gowalker.org/github.com/seven5/seven5#QbsWrapFind) is
+a means of expressing that you want to use Qbs in the implementation of the
+method and would like a properly initialized Qbs instance to be part of 
+your method signature.  This also implies the default behavior for 
+transaction rollbacks should the implementation panic().
+
+## Return values and wire types
+
+If you look in `resource/user_record.go` you'll see the other implemented
+method is "FindQbs".  This method's signature is interesting:
+
+{% highlight go %}
+func (self *UserRecordResource) FindQbs(udid string, pb s5.PBundle, q *qbs.Qbs) (interface{}, error) {
+...
+}
+{% endhighlight %}
+
+The first parameter is the _provided_ udid sent from the client. The second
+parameter is a collection of "other parameters" that may or may not have been
+provided by the client (via query parameters, her session, etc) and the
+last parameter is a Qbs instance for use in looking up the data in the
+database.  
+
+The _return_ values are less clear.  Sadly, we cannot get strong typing
+on the first parameter, it is checked at run-time.  This must match the
+wire type associated with this resource implementation (see above for
+the association).  The latter argument is an error.  If that error is
+of Seven5's [Error](https://gowalker.org/github.com/seven5/seven5#Error)
+type, you can provide the http status code an error message.  If it is
+different type of error, the client will receive an "internal error"
+result. 
+
+It is perhaps unsurprising that about half of the implementation of
+the FindQbs method in both UserRecord and Post is error checking and
+returning.
+
+
+
+
