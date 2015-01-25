@@ -897,12 +897,16 @@ The directory `pages` has all the static file content. You can go into
 the `pages` directory and type `make` to build the content:
 
 {% highlight bash %}
+$ cd TUTROOT/src/tutorial/pages
 $ make
 pagegen --support=support --dir=template --start=index.html --json=index.json > ../static/en/web/index.html
+$ make
+make: Nothing to be done for `all'.
 {% endhighlight %}
 
-There is only one page at the moment, but let's examine that command that make
-ran carefully.  The "base" html file is `pages/template/index.html` and 
+There is only one page at the moment, but let's examine that 
+command that make ran carefully.  
+The "base" html file is `pages/template/index.html` and 
 the json data bundle for that page is `pages/template/index.json`.  
 
 The `pages/template/index.html` file is:
@@ -995,11 +999,391 @@ with "godep go install tutorial/...", so we won't call it out anymore.
 
 From now on you should assume that you should run "fresno" from the primary
 tutorial directory (`TUTROOT/src/tutorial` or the parent of `static`) because
-this is how your application will be run on production.
+this is how your application will be run on production.  
 
 You can view the 
 [index page](http://localhost:5000/en/web/index.html) in your web
-browser on the local machine or [heroku](https://damp-sierra-7161.herokuapp.com/en/web/index.html).
+browser on the local machine or [heroku](https://damp-sierra-7161.herokuapp.com/en/web/index.html).  
+
+>If you are getting a 404 error in the local case
+>it is probably because you are not running fresno in parent of `static`.
+
+
+<a name="signup-form"></a>
+
+# A Signup Form
+
+Let's create a page which can handle the input of a new user signing up.
+This form won't be "hooked up" to the server yet, but will show you how
+to do some basic client-side, interactive content in go.
+
+This lesson uses the "_fixed form_ strategy" for dealing with the 
+DOM content. In this strategy, all the HTML ids ("div#foo") are known 
+in advance  so it is easy to "hook up" the interactive parts of 
+the application to  the form elements. In more complex interfaces, 
+one cannot know all the  HTML is in advance because these are 
+calculated at run-time and a different strategy is necessary.
+
+
+## Preparation for this lesson
+In the `TUTROOT/src/tutorial` directory:
+
+## Preparation for this lesson
+
+You'll need to get a copy of 
+[gopherjs](http://github.com/gopherjs/gopherjs] installed locally for
+development. Gopherjs requires go 1.4. In the 
+`TUTROOT/src/tutorial` directory:
+
+{% highlight bash %}
+$ go get github.com/gopherjs/jquery
+$ go get github.com/gopherjs/gopherjs
+$ which gopherjs
+TUTROOT/external/bin/gopherjs
+$ git checkout lesson-signup-form
+$ godep save tutorial/...
+$ git checkout -b my-signup-form
+$ git add -A .
+$ git commit -a -m "add godeps"
+{% endhighlight %}
+
+## Form feedback
+
+Once you have added the godeps above, you should be able to build the
+application, run it, and 
+[hit the server](http://localhost:5000/en/web/signup.html)
+to get the `static/en/web/signup.html` page.
+
+<img src="/assets/img/signup.png" hspace="30" vspace="30" 
+alt="the signup page" style="border:1px solid black; width:80%;height:80%; float:right;">
+
+You should see a page like the one at right. If you don't have the
+error console open, as shown at the bottom of this
+screen cap, you should open it now.  You'll need it.
+
+Typing into the form should give you some feedback in the right-hand
+portion of the screen.  Once you have filled in all the areas of the
+form and there are no errors, the "Sign Up" button will become 
+enabled.  Not that pressing it will do you any good in this lesson!
+
+## HTML code changes
+
+In the `pages` directory you'll notice there is now a 
+`pages/template/signup.html` and corresponding `pages/template/signup.json`.
+
+We have exploited our "Dont Repeat Yourself" mantra here.  The code for
+the html page is:
+
+{% highlight html %}
+<!DOCTYPE html>
+<html lang="en">
+	{{template "BOOTSTRAP_HEAD_SECTION" .}}
+
+<body>
+	<div class="container">
+
+    <h3>Sign Up For Fresno</h3>
+
+	<form class="form-horizontal">
+
+		{%raw%}{{template "FORM_6WIDE_TEXT" .first_name}}{%endraw%}
+		{%raw%}{{template "FORM_6WIDE_TEXT" .last_name}}{%endraw%}
+		{%raw%}{{template "FORM_6WIDE_TEXT" .email}}{%endraw%}
+		{%raw%}{{template "FORM_6WIDE_TEXT" .password}}{%endraw%}
+		{%raw%}{{template "FORM_6WIDE_TEXT" .confirm_password}}{%endraw%}
+  	
+  		<div class="form-group">
+    		<div class="col-sm-offset-2 col-sm-6">
+      			<button id="signup" class="disabled btn btn-primary">Sign up</button>
+    		</div>
+  		</div>
+	</form>
+
+	 {%raw%}{{template "MISC_FOOTER" .}}{%endraw%}
+	
+  </div> <!--container -->
+	
+	{%raw%}{{template "MISC_JSLOAD" .}}{%endraw%}
+</body>
+</html>
+{% endhighlight %}
+
+Since the code for each of the fields is the same, we have factored into
+it's own small template in `pages/template/form.tmpl`.  Then we re-used that
+by changing the json:
+
+{% highlight json %}
+{
+	"title":"Sign Up",
+	"css_page": "/fixed/index.css",
+	"js_file" : "signup.js",
+
+	"first_name": {
+		"id":"first_name",
+		"type": "text",
+		"label_text": "First Name",
+		"placeholder": "John"
+	},
+	"last_name": {
+		"id":"last_name",
+		"type": "text",
+		"label_text": "Last Name",
+		"placeholder": "Public"
+	},
+	"email": {
+		"id":"email",
+		"type": "text",
+		"label_text": "Email",
+		"placeholder": "foo@example.com"
+	},
+	"password": {
+		"id":"password",
+		"type": "password",
+		"label_text": "Password",
+		"placeholder": ""
+	},
+	"confirm_password": {
+		"id":"confirm_password",
+		"type": "password",
+		"label_text": "Confirm Password",
+		"placeholder": ""
+	}
+}
+
+{% endhighlight %}
+
+Note that the html page references a different json object when invoking
+"FORM_6WIDE_TEXT" for each form element.
+
+## Client side code
+
+Assuming you have "gopherjs" in your path as per the above,
+you can build the client side code (and the html pages) with
+
+{% highlight bash %}
+$ cd pages
+$ make clean
+[some files in static directory get removed]
+$ make
+pagegen --support=support --dir=template --start=index.html --json=index.json > ../static/en/web/index.html
+pagegen --support=support --dir=template --start=signup.html --json=signup.json > ../static/en/web/signup.html
+gopherjs build -o ../static/en/web/signup.js -m ../client/signup.go
+
+{% endhighlight %}
+
+When this make target runs, it _always_ generates the code for the client 
+side code, using gopherjs to build javascript files such 
+as `static/en/web/signup.js` (and the matching `static/en/web/signup.js.map`
+file).
+
+This is ok because it's quite fast as gopherjs does the same
+type of rebuild-only-if-necessary that the standard go tool does.  The
+make target is designed to give "fast feedback" when doing front-end
+development.  Just _leave fresno running_ and then in another shell
+switch to the `pages` directory and use "make" to "build everything 
+again".  Then you can just refresh your browser and you'll see the changes.
+
+The code for the client-side portion of this form is in `client/signup.go`.
+
+### Entry point
+
+A single html page, and its associated state, is represented as an
+instance of Seven5's 
+[Application](https://gowalker.org/github.com/seven5/seven5/client#Application) 
+interface.  For now, there is only one method on Application, the
+Start() method.  This method is critical because Seven5 will
+do work to insure that this method will not be called before the 
+DOM is fully ready.  
+
+Thus in our go-level "main" for this page, we just call 
+[s5.Main()](https://gowalker.org/github.com/seven5/seven5/client#Main)
+with our Application object, of type "signupPage":
+{% highlight go %}
+func main() {
+	s5.Main(newSignupPage())
+}
+{% endhighlight %}
+
+In future lessons, you'll see how to exploit the fact that main()
+is called _before_ the DOM is ready and thus might be a good place
+to start doing things that don't require all the DOM elements to be
+loaded yet.
+
+
+### Attributes and constraints
+
+Typically, you want to keep page state in your Application object
+necessary for dealing with later events.  
+Here is the definition of signupPage:
+
+{% highlight go %}
+
+type signupPage struct {
+	first s5.StringAttribute
+	last  s5.StringAttribute
+	email s5.StringAttribute
+	pwd1  s5.StringAttribute
+	pwd2  s5.StringAttribute
+
+	firstFeedback s5.StringAttribute
+	emailFeedback s5.StringAttribute
+	pwd1Feedback  s5.StringAttribute
+}
+{% endhighlight %}
+
+An attribute is Seven5 is just a value.  We have to use this slightly 
+awkward notation to represent a string as a value, "s5.StringAttribute"
+because attributes have a property that normal go values don't have:
+they can be used as the source or destination for _constraints_.  
+
+A constraint is just a function.  Such functions must take in attributes
+as their inputs and produce an value.  It's called a constraint because
+Seven5 has machinery that allows it to guarantee that your constraints are
+always "met".  
+
+> For the curious, the algorithm used to insure constraint evaluation is
+> both correct, and close to minimal is [eval_vite](ftp://ftp.cc.gatech.edu/pub/gvu/tr/1993/93-15.pdf) from 93.
+
+So, how does this work in our example form?  First, all of the first
+five attributes in the signup page have their values constrained to be
+equal to the values in the type-in fields of the form.  The "magic" of
+Seven5 is allowing constraints to be computed from parts of the DOM; all the other constraint processing algorithms/ideas have been 
+around since the 1990s.  Thus, at any point in the code of `client/signup.go`
+the value read from signupPage.first.Get() will be the value that is
+currently in the corresponding text box on the screen.
+
+We can go the other direction.  The last three fields of signupPage are 
+used to compute the values of the feedback areas to the right of the 
+text entry areas.  Again, Seven5 allows constraints to go "into" the 
+DOM as well as come from it.  So, a call like 
+signupPage.firstFeedback.Set("foobar")  will display "foobar" to the 
+right of the first name text entry box and, naturally, 
+signupPage.firstFeedback.Set("") will remove what was there before.
+
+To recap the way these eight fields are used in the application: Equality
+constraints have been placed on the DOM elements for the text entry fields
+("input" tags) and on the output areas ("label" tags) such that they remain
+equal to (have the same string content as) the corresponding fields in
+the signupPage structure.  
+
+Our 8 constraints are guaranteed by Seven5, no action is
+necessary to maintain them once the constraints are established.  You
+can see the constraints being established in the Start() method if you
+want the details.
+
+### Going both ways
+
+Why not combine the two directions of input constraints and output constraints?
+
+{% highlight go %}
+
+func emailFeedback(raw []s5.Equaler) s5.Equaler {
+	email := strings.TrimSpace(raw[0].(s5.StringEqualer).S)
+	if len(email) == 0 {
+		return s5.StringEqualer{S: ""}
+	}
+	if len(email) < 6 { //a@b.co
+		return s5.StringEqualer{S: "That doesn't look like an email address!"}
+	}
+	if strings.Index(email, "@") == -1 {
+		return s5.StringEqualer{S: "That doesn't look like an email address!"}
+	}
+	return s5.StringEqualer{S: ""} //no error
+}
+
+{% endhighlight %}
+
+This function is a "constraint function".  It is used to 
+"tie together" signupPage.email and  signupPage.emailFeedback.
+The parameter that comes in (sadly, not strongly typed) an 
+s5.StringEqualer, which means that it is the value that was produced by 
+an s5.StringAttribute, in this case signupPage.Email.  The value 
+returned by this function, also s5.StringEqualer, will end up being 
+assigned to signupPage.emailFeedback.
+
+A very similar function is used to provide the name feedback 
+(nameFeedback() in the source) and the password comparison
+feedback (emailFeedback()).
+
+The constraint function below is a function of five parameters, all of
+them coming from the five "input" attributes that are described above. It 
+produces a boolean in the form of an s5.BoolEqualer:
+
+{% highlight go %}
+
+func formIsBad(raw []s5.Equaler) s5.Equaler {
+	firstName := strings.TrimSpace(raw[0].(s5.StringEqualer).S)
+	lastName := strings.TrimSpace(raw[1].(s5.StringEqualer).S)
+	email := strings.TrimSpace(raw[2].(s5.StringEqualer).S)
+	pwd1 := raw[3].(s5.StringEqualer).S
+	pwd2 := raw[4].(s5.StringEqualer).S
+
+	if len(firstName) == 0 {
+		return s5.BoolEqualer{B: true}
+	}
+	if len(lastName) == 0 {
+		return s5.BoolEqualer{B: true}
+	}
+	if len(email) < 6 {
+		return s5.BoolEqualer{B: true}
+	}
+	if strings.Index(email, "@") == -1 {
+		return s5.BoolEqualer{B: true}
+	}
+	if len(pwd1) < 6 {
+		return s5.BoolEqualer{B: true}
+	}
+	if pwd1 != pwd2 {
+		return s5.BoolEqualer{B: true}
+	}
+	//enable button
+	return s5.BoolEqualer{B: false}
+
+}
+
+{% endhighlight  %}
+
+This is the function that looks at the form and decides if the 
+Sign Up button should be enabled.  This function's boolean result is
+connected to the DOM via the CSS class "disabled".  In other words, 
+the guarantee here is that if the value of this function is true
+(really an s5.BoolEqualer with a B field of true) then the class 
+"disabled" will be present on the button tag.  If the value of this
+function is false, then the tag is guaranteed to _not_ be there.  This
+means that we can now enable or disable (really "not disable" and "disable")
+elements of the UI based on constraints.
+
+## The Big Win
+
+>If you don't have experience with building web UIs, this may seem
+>like a "small win".  
+
+You should note that the code of 
+`client/signupPage.go` has *no event handlers*. Thus, there are no
+"callbacks" to handle events, and the spaghetti code that often 
+results is obviated.  (You can create event handlers in Seven5
+applications, but they are needed far less often.)
+
+The most common reason for convoluted event-handling code
+is attempting to deal with all the possible semantic cases that come from
+a user input.  For example: Do we need to re-compute the value of the
+enabled/disabled state of the Sign Up button on any keypress in the
+email field?  (Answer: yes.)  Do we need to recompute the value of
+the password feedback field on any keypress in the email field? 
+(Answer: no.)  More fun: What if the user adds a space to the end of 
+the last name  field? Do we need to recompute the state of the 
+Sign Up button?  When you use constraints, you can simply ignore this 
+type of question.
+
+Constraints are not a free lunch, they require work from you 
+in structuring your application.  They require you to think 
+carefully about the inputs and outputs of your user interface, and 
+require clear articulation of the processing to be done.
+The articulation must be done so that the processing of inputs to
+outputs can be encoded in constraint functions.  Our experience has
+shown that the effort required to structure a UI with constraints is
+easily outweighed by the benefits gained in cleaner UI code.
+
 
 
 
