@@ -136,10 +136,16 @@ pull in the Seven5 dependencies.
 You should be able to build and run the dummy main program like this:
 
 {% highlight bash %}
-$ go install tutorial/fresno-dummy-main
+$ godep go install tutorial/fresno-dummy-main
 $ fresno-dummy-main
 2015/01/24 11:06:01 Seven5 is now vendored
 {% endhighlight %}
+
+Note that the build command builds using godep, not go directly.  This means
+that you are using the vendored godeps in the `Godeps/workspace/_src`
+directory.  If you for some reason want to _not_ use the vendored 
+godeps, your enable script sets `GOPATH` so just 
+"go install tutorial/fresno-dummy-main" will work.
 
 ### Godep workflow in Seven5
 
@@ -171,7 +177,8 @@ you need and don't have if you forget!
 
 For this lesson, you'll need to install the lesson source code,
 the sources to 
-[gopherjs](http://www.gopherjs.org) and to save the dependencies:
+[gopherjs](http://www.gopherjs.org) and to save the dependencies.
+In the `TUTROOT/src/tutorial` directory:
 
 {% highlight bash %}
 $ git checkout lesson-simple-server
@@ -215,7 +222,7 @@ doing oauth.
 ## Build and run the application locally
 
 {% highlight bash %}
-$ go install tutorial/fresno
+$ godep go install tutorial/fresno
 $ fresno
 2015/01/24 11:42:34 [SERVE] waiting on :5000
 {% endhighlight %}
@@ -256,17 +263,14 @@ remote:        https://damp-sierra-7161.herokuapp.com/ deployed to Heroku
 You'll notice that the branch "my-simple-server" is being pushed to "master"
 on heroku because heroku only builds on pushes to master.  
 
-You should now be able to go "https://damp-sierra-7161.herokuapp.com/" 
+You should now be able to visit "https://damp-sierra-7161.herokuapp.com/" 
 (with your app's name) and see the same output that you receive locally.
 
 <a name="database"></a>
 
-# Adding A Database
-
-You should start by going to your app on the [heroku dashboard](https://dashboard.heroku.com/apps/). Click on your apps name from the list of
-apps and then click on "Get more addons".  Then scroll down to the "Heroku
-Postgres" icon in the "Data Stores" section. 
-
+# Add A Database
+Most realistic applications need access to reliable relational store.
+Fresno is no exception, so we'll go ahead and set this up now.
 
 ## Preparation for this lesson
 
@@ -274,7 +278,7 @@ For this lesson, you'll need to install the lesson source code,
 the sources to [qbs](http://github.com/coocood/qbs) and 
 [pq](http://github.com/lib/pq) and to save 
 the dependencies. It's also a good time to create a branch for your 
-work.
+work.  In the `TUTROOT/src/tutorial` directory:
 
 {% highlight bash %}
 $ git checkout lesson-add-database
@@ -282,16 +286,17 @@ $ go get github.com/coocood/qbs
 $ go get github.com/lib/pq
 $ godep save tutorial/fresno
 $ git checkout -b my-add-db
+$ git add -A .
 $ git commit -a -m "add godeps"
 {% endhighlight %}
 
 You'll need to have a copy of postgres running on your local system
 for development.  On a mac, you can do this `brew install postgres`
 and then follow its directions about how to run the database.  On a
-linux system, use your package manager (yum, apt-get, or similar)
+linux system, use your package manager (yum, apt-get, pacman, or similar)
 to install the postgres server.  
 
-This document assumes postgres version 9.3 but other versions in the
+This document assumes postgres version 9.3, but other versions in the
 9.x series will likely work.
 
 ## Add postgres your heroku app
@@ -314,6 +319,8 @@ $ cat enable-tutorial
 export DATABASE_URL="postgres://$USER@localhost:$PGPORT/fresno"
 {% endhighlight %}
 
+## Local database setup
+
 On your local system you'll need to create the database "freso"
 
 {% highlight bash %}
@@ -330,4 +337,154 @@ Because all the configuration information is drawn from the
 `DATABASE_URL` you can run the same go code on both your local system 
 and on heroku (and they may very well be different operating systems
 if you are developing locally on OSX).
+
+<a name="psql"></a>
+
+#### PSQL
+
+If you are familar with SQL, you can get an SQL prompt with
+{% highlight bash %}
+$ psql $DATABASE_URL
+{% endhighlight %}
+on your local system or for the remote database on heroku:
+
+{% highlight bash %}
+$ heroku pg:psql
+{% endhighlight %}
+
+> By-hand updates to the "production" database on heroku may
+> be an exceptionally bad idea.
+
+<a name="migrations"></a>
+
+# Migrations
+
+With a web server, a database, all our dependencies captured in our
+git repository, and a path to production deployment
+we are now ready to start doing some real development.
+
+## Preparation for this lesson
+
+{% highlight bash %}
+$ git checkout lesson-migration
+$ godep save tutorial/...
+$ git checkout -b my-migration
+$ git add -A .
+$ git commit -a -m "add godeps"
+{% endhighlight %}
+
+Note that now we have more than one program, so we use "tutorial/..." as the 
+argument to "godep save".
+
+## Database and migrations
+Seven5 uses [qbs](https://gowalker.org/github.com/coocood/qbs) to provide
+a thin layer of abstraction for database querying.  However, QBS' migration
+support is not sufficient for real applications--for example, it does not
+support changing column names. So Seven5 provides a thin shim to allow
+migrations to be written in SQL + go.
+
+We'll use a migration here to initialize our database with the tables we
+want to use as well as some test data for our app to serve up.  When using
+Seven5's support for migrations, you should create a new binary which 
+will be called "migrate" because it's source is in the `migrate` directory.
+
+## How migrations work
+You can see the example migrations in `migrate/main.go`.  
+These migrations are just SQL statements wrapped in go.  The table at the 
+top controls the behavior of the resulting program:
+
+{% highlight go %}
+var defn = migrate.Definitions{
+	Up: map[int]migrate.MigrationFunc{
+		1: oneUp,
+	},
+	Down: map[int]migrate.MigrationFunc{
+		1: oneDown,
+	},
+}
+{% endhighlight %}
+
+This table is passed through to 
+[migrate.Main](https://gowalker.org/github.com/seven5/seven5/migrate#Main)
+which is supplied by Seven5 as an entry point for migration programs.
+
+Each migration should create/modify tables or data in the database and
+can assume that if a given migration is run, that all previous migrations
+in the correct order have been run successfully.  Any migration function
+that has a problem should return an error and the transaction will be
+rolled back and the database left unchanged.  
+
+Probably the simplest migration is the migration from state 1 to state 0,
+which is the "oneDown" function in this program:
+
+{% highlight go %}
+func oneDown(tx *sql.Tx) error {
+	//bc of foreign keys, order of these drops is siginficant
+	drops := []string{
+		"DROP TABLE post",
+		"DROP TABLE user_record",
+	}
+	for _, drop := range drops {
+		_, err := tx.Exec(drop)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+{% endhighlight %}
+
+If you look at the up migration, you will notice that the "oneUp" migration
+creates to sample users and sample posts.  This is handy for running tests
+because you can just assume that if the database is there, these users
+and posts are present.
+
+### Caveat (Qbs data type matching)
+
+When create a table in SQL, you have to create it with the structure
+(data types and names) that will mesh with Qbs. Generally, this fairly
+straightforward as the names are converted from camel case in go to
+snake case for postgres.  However, you may need to experiment with
+the column types to make sure that the structures in go match up them.
+This is less burdensome than you'd expect because the set of types that
+you can express in the go structures is limited.
+
+The next lesson will discuss what structures in go correspond to the
+tables created.
+
+## Building and running the migrations locally
+
+You can build and run the migration application like this:
+
+{% highlight bash %}
+$ godep go install tutorial/migrate
+$ migrate --up
+[migrator] attempting migration UP 001
+001 UP migrations performed
+{% endhighlight %}
+
+You may find it interesting to use "psql" (see [previous lesson](#psql)) 
+to look at what's in the database after you this command.  
+The reverse also works:
+
+{% highlight bash %}
+$ godep go install tutorial/migrate
+$ migrate --down
+[migrator] attempting migration DOWN 001
+001 DOWN migrations performed
+$ migrate --down
+at earliest migration, nothing to do
+{% endhighlight %}
+
+Again, you may find it interesting to look inside the database at the result
+of doing "migrate --down".   There options you can pass to run a specific
+number of up or down migrations with the "--step" option.
+
+## Building and running the migrations on heroku
+
+If you push this version of the code to heroku, you can get a bash shell on
+the remote (heroku) machine and then use the migrations just as with the 
+local case.
+
+
 
