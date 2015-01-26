@@ -174,6 +174,10 @@ Because of the use of the external staging directory,
 it is *always* safe to delete the Godeps directory and "try again" 
 with "godep save" if something gets messed up in your project.
 
+> Yes, it's a pain in the tutorial but in steady state on a real project
+> this issue only comes up when you are changing the versions of dependent
+> libraries.  In that case, the clear separation of staging is a win.
+
 <a name="simple-server"></a>
 
 # Creating And Deploying A Simple Server
@@ -631,6 +635,8 @@ $ godep go install tutorial/...
 $ fresno
 {% endhighlight %}
 
+<a name="curl-to-server"></a>
+
 In another shell window, try:
 
 {% highlight bash %}
@@ -1021,17 +1027,15 @@ This lesson uses the "_fixed form_ strategy" for dealing with the
 DOM content. In this strategy, all the HTML ids ("div#foo") are known 
 in advance  so it is easy to "hook up" the interactive parts of 
 the application to  the form elements. In more complex interfaces, 
-one cannot know all the  HTML is in advance because these are 
+one cannot know all the  HTML ids in advance, because these are 
 calculated at run-time and a different strategy is necessary.
 
 
 ## Preparation for this lesson
 In the `TUTROOT/src/tutorial` directory:
 
-## Preparation for this lesson
-
 You'll need to get a copy of 
-[gopherjs](http://github.com/gopherjs/gopherjs] installed locally for
+[gopherjs](http://github.com/gopherjs/gopherjs) installed locally for
 development. Gopherjs requires go 1.4. In the 
 `TUTROOT/src/tutorial` directory:
 
@@ -1109,8 +1113,8 @@ the html page is:
 {% endhighlight %}
 
 Since the code for each of the fields is the same, we have factored into
-it's own small template in `pages/template/form.tmpl`.  Then we re-used that
-by changing the json:
+its own small template in `pages/template/form.tmpl`.  Then we re-used that
+template by changing the json:
 
 {% highlight json %}
 {
@@ -1384,6 +1388,166 @@ outputs can be encoded in constraint functions.  Our experience has
 shown that the effort required to structure a UI with constraints is
 easily outweighed by the benefits gained in cleaner UI code.
 
+## XXX GOPATH and jsmaps
+This is broken right now.
+
+<a name="create-users"></a>
+
+# Creating Users
+
+Now that we have a form that takes in a user's information, we are going
+to connect it to the server side so new users get created in the database.
+This lesson is primarily about not trusting user input.
+
+## Preparation for this lesson
+In the `TUTROOT/src/tutorial` directory:
+
+{% highlight bash %}
+$ git checkout lesson-create-users
+$ godep save tutorial/...
+$ git checkout -b my-create-users
+$ git add -A .
+$ git commit -a -m "add godeps"
+{% endhighlight %}
+
+## Client side changes
+
+We have slightly modified the client side code to print to the console
+information about success or failure of creating users after you "push
+the big blue button."  In Start() of the application code, in 
+`client/signup.go`:
+
+{% highlight go %}
+func (s signupPage) Start() {
+	//... elided ...
+	button.Dom().On(s5.CLICK, func(evt jquery.Event) {
+		evt.PreventDefault()
+		var ur shared.UserRecord
+		ur.EmailAddr = s.email.Value()
+		ur.FirstName = s.first.Value()
+		ur.LastName = s.last.Value()
+		ur.Password = s.pwd1.Value()
+		ur.Admin = true //hee hee hee
+		s5.PostNew(&ur, "/rest",
+			func(ptrToStruct interface{}) {
+				user := ptrToStruct.(*shared.UserRecord)
+				print("user is", user.EmailAddr, user.UserUdid)
+			},
+			func(httpCode int, msg string) {
+				print("failed to post", httpCode, msg)
+			})
+	})
+{% endhighlight  %}
+
+It should be fairly clear that this is (gasp!) responding to a click
+event and copying data out of the form (via the attributes!) into a 
+shared.UserRecord structure.  This is then sent to the server with 
+PostNew() and one of the two functions will be called.  The first of
+these is the success case and the newly created value is passed into
+this function.  Note that the new value has a UserUdid field which was
+created by the server.  The failure case can happen due to problems on
+the server's end--a common one would be that this user's email address
+is already taken (already registered).  The server converts the email
+address to lower case when performing this check.
+
+### PtrToStruct and networking
+
+When using the methods provided by Seven5 for networking (such as
+PostNew above) you need to take care of a few things because the typing
+cannot be as strong as we would like:
+
+* Respect the wire types.  The code in shared that has wire types should
+always be used to prevent wrong fields.
+* Use a pointer to a struct.  Internally, Seven5 will check that you have
+done this and panic() if you do not.  
+* Expect a pointer to a struct.  When you receive success callback from
+Seven5, it will be sending you a pointer to a struct of the same type
+as you (should have) passed in.  
+
+In other words, if you pass in a pointer to the shared wire type and expect
+the library to do the same, things will work out nicely. 
+
+> This problem is fundamentally one of using json as the transport which
+> prevents us from doing strong typing.  We encourage folks that
+> are interested in this issue to experiment with using protobufs or
+> similar as the transport.  This would allow a more "tight rpc style" of 
+> calls from client to server rather than the "loosey-goosey" style of json.
+
+## Server changes
+
+The server side changes are more interesting.  In main() (`freso/main.go`)
+we now have informed the dispatcher that we have a Post implementation
+(sometimes called "verb") in place as well as a Find:
+{% highlight go %}
+
+	base.ResourceSeparateUdid("userrecord",
+		&shared.UserRecord{},
+		nil, //index
+		s5.QbsWrapFindUdid(&resource.UserRecordResource{}, store),
+		s5.QbsWrapPost(&resource.UserRecordResource{}, store), //post
+		nil, //put
+		nil) //delete
+
+{% endhighlight  %}
+
+In `resource/user_record.go` we have implemented the method PostQbs
+to handle the information sent from the client. The server needs
+to take care to not simply trust the data in "proposed" (did you
+spot the "hee hee" moment in the client-side?):
+
+{% highlight go %}
+
+func (self *UserRecordResource) PostQbs(i interface{}, pb s5.PBundle, q *qbs.Qbs) (interface{}, error) {
+	var ur shared.UserRecord
+	proposed := i.(*shared.UserRecord)
+	e := strings.ToLower(strings.TrimSpace(proposed.EmailAddr))
+
+	err := q.WhereEqual("email_addr", e).Find(&ur)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, s5.HTTPError(http.StatusInternalServerError, fmt.Sprintf("couldn't find: %v", err))
+	}
+	if err == nil {
+		return nil, s5.HTTPError(http.StatusBadRequest, fmt.Sprintf("email address already registered %s: %s", proposed.EmailAddr, ur.UserUdid))
+	}
+	//just to make doubly sure we don't inadvently trust data from the client we
+	//use the newly created ur which is a zero value at this point
+	ur.Admin = false    //nuke the site from orbit
+	ur.Disabled = false //its the only way to be sure
+	if strings.Index(e, "@") == -1 {
+		return nil, s5.HTTPError(http.StatusBadRequest, fmt.Sprintf("email address not ok: %s", proposed.EmailAddr))
+	}
+	ur.EmailAddr = e //copy it over
+	if len(proposed.Password) < 6 {
+		return nil, s5.HTTPError(http.StatusBadRequest, fmt.Sprintf("password too short: %s", proposed.Password))
+	}
+	ur.Password = proposed.Password //copy it over
+	if len(proposed.FirstName) == 0 || len(proposed.LastName) == 0 {
+		return nil, s5.HTTPError(http.StatusBadRequest, fmt.Sprintf("bad first or last name"))
+	}
+	ur.FirstName = proposed.FirstName
+	ur.LastName = proposed.LastName
+	//XXX this has a race condition which could cause two or more users with same
+	//XXX email, right way to fix it is a DB constraint "unique"
+	//values are ok, write it
+	proposed.UserUdid = s5.UDID() //generate a random UDID
+	if _, err := q.Save(proposed); err != nil {
+		return nil, s5.HTTPError(http.StatusInternalServerError, fmt.Sprintf("couldn't save: %v", err))
+	}
+	return proposed, nil
+}
+
+{% endhighlight  %}
+
+## Testing creating users
+
+You should be able to build the client side with "make" in `pages` and
+the server with "godep go install tutorial/..." the main tutorial directory.
+You can visit the new sign up page 
+[here](http://localhost:5000/en/web/signup.html) if fresno is running.
+
+You may want to try making the development console visible in your browser
+and then cutting and pasting a newly created UDIDs at your server with
+[curl](#curl-to-server).
 
 
 
