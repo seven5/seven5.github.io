@@ -22,6 +22,9 @@ $ ls -l /
 The dollar sign is used to indicate you should type the command at the
 shell and expected output is placed immediately afterward.
 
+We use the same "boxed" typography for code samples that are taken from
+go code in the tutorial.
+
 In cases where we are referring to a file or directory that is part 
 of the tutorial we will write it like this `somefile.go`.  We also will 
 indicate environment variables the same way (`PAGER`).
@@ -41,7 +44,7 @@ This document assumes you understand
 * the basics of git
 
 Further, this tutorial assumes you are developing on a Mac using OSX or 
-a similar-enough Linux installation.  
+a similar-enough Linux installation. 
 
 You will need to have a version of go installed that is at least 1.4. On
 OSX the recommend way to do this is via brew.
@@ -75,15 +78,10 @@ $ git checkout lesson-setup
 $ cat enable-tutorial
 {% endhighlight %}
 
-> After the "git checkout" command you get a long-winded warning about 
-> being in "detached head state".  This is normal, can be ignored, and more
-> permanent solution--creating a new branch for your work--will be explained
-> in future lessons.
-
 and examine the output of the last command.  That is the _enable script_
 and you should put in this file any "local" setup that you need to do
 have the this tutorial work, but also to not break other projects you 
-have on your system.  
+have on your system. 
 
 Once you are satisfied with the content of the enable script, you should
 source it into your environment (not execute it):
@@ -96,6 +94,8 @@ go version go1.4.1 darwin/amd64
 
 The output of the last command should be verison 1.4+ and appropriate
 for your operating system. 
+
+<a name="godep-dance"></a>
 
 ## How to use godep with Seven5
 
@@ -132,7 +132,7 @@ $ cat Godeps/Godeps.json
 
 The output of the last command is the dependencies of the dummy project
 `fresno-dummy-main` which is used as an example here. You'll notice that
-this includes Seven5 itself plus all the things it depends on, recursively.  
+this includes Seven5 itself plus all the things it depends on, recursively. 
 
 You may want to look at `fresno-dummy-main/main.go` to see the imports
 that are read by godep.  We use the "import _" trick to force godep to
@@ -155,6 +155,8 @@ is not recommended as you want to be building/running locally on
 precisely the same things that are going to be used in production, which
 is the contents of the `Godeps` directory.
 
+
+
 ### Godep workflow in Seven5
 
 When doing development, the pattern for dealing with godeps is:
@@ -174,7 +176,7 @@ Because of the use of the external staging directory,
 it is *always* safe to delete the Godeps directory and "try again" 
 with "godep save" if something gets messed up in your project.
 
-> Yes, it's a pain in the tutorial but in steady state on a real project
+> Yes, it's a pain in the tutorial but in steady state, on a real project,
 > this issue only comes up when you are changing the versions of dependent
 > libraries.  In that case, the clear separation of staging is a win.
 
@@ -184,7 +186,7 @@ with "godep save" if something gets messed up in your project.
 
 For this lesson and all the ones following, we'll assume that you can
 get the godeps set up correctly (it was explained in the 
-[previous lesson](#setup) if you are jumping around).  
+[previous lesson](#setup) if you are jumping around). 
 These are not checked into the tutorial source code and 
 anytime you change lessons, you'll probably have to "go get" 
 some dependencies and/or "godep save" to copy them into
@@ -256,7 +258,7 @@ on your screen.
 ## Create a local branch for experimenting
 
 You'll need to use git to create a local branch of tutorial so you can
-commit the necessary godeps and have a branch to push to heroku.  
+commit the necessary godeps and have a branch to push to heroku. 
 You may want to do this anyway if you have changes to the enable script 
 or want to play with the source code.
 
@@ -270,7 +272,7 @@ $ git commit -a -m "add godeps"
 ## Build and run on heroku
 
 You first need to tell heroku about the buildpack for Seven5 and the app's
-own name (change this to the name you got when you created your app).  
+own name (change this to the name you got when you created your app). 
 After that "git push" is your deployment mechanism:
 
 {% highlight bash %}
@@ -283,7 +285,7 @@ remote:        https://damp-sierra-7161.herokuapp.com/ deployed to Heroku
 {% endhighlight %}
 
 You'll notice that the branch "my-simple-server" is being pushed to "master"
-on heroku because heroku only builds on pushes to master.  
+on heroku because heroku only builds on pushes to master. 
 
 > If you see an error like this:
 <pre>
@@ -324,7 +326,7 @@ You'll need to have a copy of postgres running on your local system
 for development.  On a mac, you can do this `brew install postgres`
 and then follow its directions about how to run the database.  On a
 linux system, use your package manager (yum, apt-get, pacman, or similar)
-to install the postgres server.  
+to install the postgres server. 
 
 This document assumes postgres version 9.3, but other versions in the
 9.x series will likely work.
@@ -424,7 +426,7 @@ Seven5's support for migrations, you should create a new binary which
 will be called "migrate" because it's source is in the `migrate` directory.
 
 ## How migrations work
-You can see the example migrations in `migrate/main.go`.  
+You can see the example migrations in `migrate/main.go`. 
 These migrations are just SQL statements wrapped in go.  The table at the 
 top controls the behavior of the resulting program:
 
@@ -447,7 +449,7 @@ Each migration should create/modify tables or data in the database and
 can assume that if a given migration is run, that all previous migrations
 in the correct order have been run successfully.  Any migration function
 that has a problem should return an error and the transaction will be
-rolled back and the database left unchanged.  
+rolled back and the database left unchanged. 
 
 Probably the simplest migration is the migration from state 1 to state 0,
 which is the "oneDown" function in this program:
@@ -503,7 +505,7 @@ current migration number is 001
 {% endhighlight %}
 
 You may find it interesting to use "psql" (see [previous lesson](#psql)) 
-to look at what's in the database after you this command.  
+to look at what's in the database after you this command. 
 The reverse also works:
 
 {% highlight bash %}
@@ -620,7 +622,7 @@ in the structures "UserRecord" and "Post" must match up to the columns
 in the database tables "user_record" and "post".  The primary key field
 must be called out to Qbs if the "pk" is a string, and it is good practice
 to do it in any case, even though Qbs would default to choosing the 
-int64 field Id for Post.  
+int64 field Id for Post. 
 
 You'll notice that we do a join on the post's author to a user record.
 This is done by default by Qbs at retrieval-time and we've just accepted
@@ -758,7 +760,7 @@ a means of expressing that you want to use Qbs in the implementation of the
 method and would like a properly initialized Qbs instance to be part of 
 your method signature. 
 
-The use of "QbsWrapFind" or othe "QbsWrap*" methods  also implies the 
+The use of "QbsWrapFind" or othe "QbsWrap\*" methods  also implies the 
 default behavior for transaction rollbacks should the implementation
 panic().  In general, if you use the QbsWrap* wrapper functions you should be 
 able to ignore transactions.
@@ -778,7 +780,7 @@ The first parameter is the _provided_ udid sent from the client. The second
 parameter is a collection of "other parameters" that may or may not have been
 provided by the client (via query parameters, her session, etc) and the
 last parameter is a Qbs instance for use in looking up the data in the
-database.  
+database. 
 
 The _return_ values are less clear.  Sadly, we cannot get strong typing
 on the first parameter, it is checked at run-time.  This must match the
@@ -911,9 +913,9 @@ make: Nothing to be done for `all'.
 {% endhighlight %}
 
 There is only one page at the moment, but let's examine that 
-command that make ran carefully.  
+command that make ran carefully. 
 The "base" html file is `pages/template/index.html` and 
-the json data bundle for that page is `pages/template/index.json`.  
+the json data bundle for that page is `pages/template/index.json`. 
 
 The `pages/template/index.html` file is:
 
@@ -944,13 +946,13 @@ The `pages/template/index.json` file is:
 }
 {% endhighlight %}
 
-The "template" for our index.html page is "merged" with this json blob.  
+The "template" for our index.html page is "merged" with this json blob. 
 The make command above referenced the support directory 
 `pages/template/support`.  _All_ the templates found in this directory
 (files ending in ".tmpl").  You can see the definition of the referenced
 template BOOTSTRAP_HEAD_SECTION in `pages/template/support/bootstrap.tmpl`
 and the templates MISC_FOOTER and MISC_JSLOAD in 
-`pages/template/support/misc.tmpl`.  
+`pages/template/support/misc.tmpl`. 
 
 It should be noted that the calls to these "partial templates" are passed
 the argument "." (dot).  This is set to the root object of the json content
@@ -1005,11 +1007,11 @@ with "godep go install tutorial/...", so we won't call it out anymore.
 
 From now on you should assume that you should run "fresno" from the primary
 tutorial directory (`TUTROOT/src/tutorial` or the parent of `static`) because
-this is how your application will be run on production.  
+this is how your application will be run on production. 
 
 You can view the 
 [index page](http://localhost:5000/en/web/index.html) in your web
-browser on the local machine or [heroku](https://damp-sierra-7161.herokuapp.com/en/web/index.html).  
+browser on the local machine or [heroku](https://damp-sierra-7161.herokuapp.com/en/web/index.html). 
 
 >If you are getting a 404 error in the local case
 >it is probably because you are not running fresno in parent of `static`.
@@ -1197,7 +1199,7 @@ instance of Seven5's
 interface.  For now, there is only one method on Application, the
 Start() method.  This method is critical because Seven5 will
 do work to insure that this method will not be called before the 
-DOM is fully ready.  
+DOM is fully ready. 
 
 Thus in our go-level "main" for this page, we just call 
 [s5.Main()](https://gowalker.org/github.com/seven5/seven5/client#Main)
@@ -1213,11 +1215,12 @@ is called _before_ the DOM is ready and thus might be a good place
 to start doing things that don't require all the DOM elements to be
 loaded yet.
 
+<a name="constraints"></a>
 
 ### Attributes and constraints
 
 Typically, you want to keep page state in your Application object
-necessary for dealing with later events.  
+necessary for dealing with later events. 
 Here is the definition of signupPage:
 
 {% highlight go %}
@@ -1238,12 +1241,12 @@ type signupPage struct {
 An attribute is Seven5 is just a value.  We have to use this slightly 
 awkward notation to represent a string as a value, "s5.StringAttribute"
 because attributes have a property that normal go values don't have:
-they can be used as the source or destination for _constraints_.  
+they can be used as the source or destination for _constraints_. 
 
 A constraint is just a function.  Such functions must take in attributes
 as their inputs and produce an value.  It's called a constraint because
 Seven5 has machinery that allows it to guarantee that your constraints are
-always "met".  
+always "met". 
 
 > For the curious, the algorithm used to insure constraint evaluation is
 > both correct, and close to minimal is [eval_vite](ftp://ftp.cc.gatech.edu/pub/gvu/tr/1993/93-15.pdf) from 93.
@@ -1268,7 +1271,7 @@ To recap the way these eight fields are used in the application: Equality
 constraints have been placed on the DOM elements for the text entry fields
 ("input" tags) and on the output areas ("label" tags) such that they remain
 equal to (have the same string content as) the corresponding fields in
-the signupPage structure.  
+the signupPage structure. 
 
 Our 8 constraints are guaranteed by Seven5, no action is
 necessary to maintain them once the constraints are established.  You
@@ -1360,7 +1363,7 @@ elements of the UI based on constraints.
 ## The Big Win
 
 >If you don't have experience with building web UIs, this may seem
->like a "small win".  
+>like a "small win". 
 
 You should note that the code of 
 `client/signupPage.go` has *no event handlers*. Thus, there are no
@@ -1398,7 +1401,7 @@ If you look at the developer console (see figure above) at the right of
 the "hello, world" you'll see "signup.go:56" in italics.  You can click
 on it and go to the line in the source code.  Seven5 knows how to 
 interpret the request to show you the source code based on your GOPATH
-(set in the enable script).  
+(set in the enable script). 
 
 If you look at the source code, you'll notice a couple of differences
 that are related to coding in a browser:
@@ -1415,7 +1418,7 @@ The function used to print to the console is the go builtin "print()",
 not any of the methods from the log or fmt package.  print() is fairly
 smart and knows how to print complex objects into the java script
 console, so pretty much _anything_ can be printed, although you'll be
-looking at the javascript representation, rather than the go one.  
+looking at the javascript representation, rather than the go one. 
 
 More interesting is to introduce a panic("foo") immediately after that print
 and then rebuild ("make" in the pages dir) the client-side code.  If you
@@ -1462,6 +1465,8 @@ really into debuggers so it seemed a bit callous to not share at least
 the starting point.
 
 
+
+
 <a name="create-users"></a>
 
 # Creating Users
@@ -1499,50 +1504,22 @@ func (s signupPage) Start() {
 		ur.LastName = s.last.Value()
 		ur.Password = s.pwd1.Value()
 		ur.Admin = true //hee hee hee
-		s5.PostNew(&ur, "/rest",
-			func(ptrToStruct interface{}) {
-				user := ptrToStruct.(*shared.UserRecord)
-				print("user is", user.EmailAddr, user.UserUdid)
-			},
-			func(httpCode int, msg string) {
-				print("failed to post", httpCode, msg)
-			})
-	})
+		contentCh, errCh := s5.AjaxPost(&ur, "/rest")
+		go func() {
+			select {
+			case <-contentCh:
+			case err := <-errCh:
+				print("failed to post", err.StatusCode, err.Message)
+			}
+		}()
 {% endhighlight  %}
 
-It should be fairly clear that this is (gasp!) responding to a click
+It should be fairly clear that this is responding to a click
 event and copying data out of the form (via the attributes!) into a 
 shared.UserRecord structure.  This is then sent to the server with 
-PostNew() and one of the two functions will be called.  The first of
-these is the success case and the newly created value is passed into
-this function.  Note that the new value has a UserUdid field which was
-created by the server.  The failure case can happen due to problems on
-the server's end--a common one would be that this user's email address
-is already taken (already registered).  The server converts the email
-address to lower case when performing this check.
+AjaxPost().  The details of the Ajax call will be covered in a future
+lesson.
 
-### PtrToStruct and networking
-
-When using the methods provided by Seven5 for networking (such as
-PostNew above) you need to take care of a few things because the typing
-cannot be as strong as we would like:
-
-* Respect the wire types.  The code in shared that has wire types should
-always be used to prevent wrong fields.
-* Use a pointer to a struct.  Internally, Seven5 will check that you have
-done this and panic() if you do not.  
-* Expect a pointer to a struct.  When you receive success callback from
-Seven5, it will be sending you a pointer to a struct of the same type
-as you (should have) passed in.  
-
-In other words, if you pass in a pointer to the shared wire type and expect
-the library to do the same, things will work out nicely. 
-
-> This problem is fundamentally one of using json as the transport which
-> prevents us from doing strong typing.  We encourage folks that
-> are interested in this issue to experiment with using protobufs or
-> similar as the transport.  This would allow a more "tight rpc style" of 
-> calls from client to server rather than the "loosey-goosey" style of json.
 
 ## Server changes
 
@@ -1620,67 +1597,949 @@ You may want to try making the development console visible in your browser
 and then cutting and pasting a newly created UDIDs at your server with
 [curl](#curl-to-server).
 
-<a name="pwd-authentication"></a>
+<a name="pwd-allow"></a>
 
-# Password Authentication
+# Password Authentication: Allow Methods And Sessions
 
-For the avoidance of doubt: _authentication is nasty_.  The reader will have
-noticed that the Seven5 programming model to this point was very clearly
-differentiated: rest services that communicate via apis mounted at 
-/rest/resourcename or static files, mounted at /.  Static files were
-served up in the usual way, with http status code 304 allowing convenient
-caching, and requests to the apis in /rest could not be cached as they
-were "hot".  
+For the avoidance of doubt: _authentication is nasty_.  The reader 
+will likely have noticed that the Seven5 programming model to this 
+point was very clearly differentiated: rest services that communicate 
+via apis mounted at  /rest/resourcename or static files, mounted at /. 
+
+Static files were served up in the usual way, with http status 
+code 304 allowing convenient caching, and requests to the apis 
+in /rest could not be cached as they were "hot". 
 
 Authentication creates a problem.  We are going to be forced to introduce
-to new "endpoints" in our URL space that are neither fish nor fowl:  
+to new "endpoints" in our URL space that are neither fish nor fowl: 
 
-* /auth the place to send data that is about a user that wants to log in or out
-* /me the place to request information about the currently logged in user
+* /auth: the place to send data that concerns an attempt to log in or out
+* /me: the place to request information about the currently logged in user
 
 Neither of these endpoints can be cached, yet they are not RESTful. 
 
+<a name="setup-auth"></a>
 
-## Preparation for this lesson
-In the `TUTROOT/src/tutorial` directory:
+## Setup for this lesson
+
+We start with the "usual" three steps to build a fresno binary:
+
+* Checkout the lesson's code
+* Update godeps into this lesson
+* Build and run fresno proper
+
+The output of these shell commands has been elided for space:
 
 {% highlight bash %}
-$ git checkout lesson-password-authentication
+$ git checkout lesson-auth-allow
 $ godep save tutorial/...
-$ git checkout -b my-password-authentication
-$ git add -A .
-$ git commit -a -m "add godeps"
+$ godep go install tutorial/fresno
+$ fresno
 {% endhighlight %}
 
-## "Simple" and "Raw" in Seven5
+Then in another window try to retreive Mary's record from fresno, as 
+[before](#curl-to-server):
 
-This lesson will introduce some types of the form:
+{% highlight bash %}
+$ curl localhost:5000/rest/userrecord/515f7619-8ea2-427f-8cf3-7a9201c747dd
+Not authorized (FIND, UDID)
+{% endhighlight %}
+
+## Allow methods
+
+What has changed in this lesson is that we have used _allow methods_ to
+control access to this url.  Since your attempt to hit the server
+with curl is not authenticated, much less authenticated as Mary, 
+you cannot read this URL. 
+
+Allow methods permit coarse-grain policies to be implemented "around"
+a particular REST resource.  Allow methods run *before* any resource code
+is executed and these should they indicate that access is or is 
+not allowed  via their return value. If the return value is false, 
+the resource method is not called at all and error is returned to 
+the client.  The allow methods for a resource that uses UDIDs for 
+resource identity are represented as interfaces in Seven5:
+
+{% highlight go %}
+
+//For POST method to a resource
+type AllowWriter interface {
+        AllowWrite(PBundle) bool
+}
+
+//For INDEX method
+type AllowReader interface {
+        AllowRead(PBundle) bool
+}
+
+//For PUT, DELETE and FIND
+type AllowerUdid interface {
+        Allow(udid string, method string, pb PBundle) bool
+}
+{% endhighlight %}
+
+By implementing any of these interfaces as part of your resource 
+implementation, you can get the option to "accept or reject" method
+calls.  You are also provided with the parameters that will be sent
+to the resource method if it is invoked, so you can make decisions
+based on parameters, sessions, etc. 
+
+Each of these methods are provided with a Seven5 Pbundle (pronounced
+pee-bundell) or _parameter bundle_.  This contains numerous values
+that have been sent by the client side and will be detailed later. 
+The last method in our code above is provided with the method name 
+(2nd parameter), in uppercase letters, to allow the receiver to
+discriminate based on the method invoked. 
+
+In our new implementation of `resource/user_record.go` we now have 
+a implementation of Allow that rejects our effort to GET the resource.
+
+{% highlight go %}
+//You can only read or update yourself.
+func (self *UserRecordResource) Allow(udid string, method string, pb s5.PBundle) bool {
+	if pb.Session() == nil {
+		return false
+	}
+	ud := pb.Session().UserData().(*shared.UserRecord)
+	return ud.UserUdid == udid
+}
+{% endhighlight %}
+
+This implementation uses the existence of a session in the parameter
+bundle as a way to see if the user is logged in and, if the user
+is logged in, checks that the attempt to modify a record has the
+same Udid as the logged in user.
+
+## Sessions
+
+Seven5 provides some common utilities for manipulating a _session_
+inside the server of an application.  The utilities make the assumption
+that a user that is "logged in" to the application will have one 
+and only one session, even if they have multiple browser windows connected
+to fresno.   The semantics of "logged in" are defined by
+the application itself, but typically involve some type of
+authentication. 
+
+For this lesson, we are assuming that the user types in
+an email address and a password, sends them to the server, and the
+server compares the submitted password to the value it has stored
+for that email address. In the successful case, a session is created
+as the _user data_ for the session is set to a UserRecord struct,
+from `shared/user_record.go`.  If the passwords don't match, an error
+is returned.
+
+The user data associated with a session can be any go value (it's an 
+interface{}) but typically what needs to be _hung_ on the session 
+is information about the current user.  This is what is done fresno.
+
+### Session keys
+
+Seven5 uses `SERVER_SESSION_KEY` to insure that users (client programs)
+don't tamper with their sessions.  Only the server knows the 
+`SERVER_SESSION_KEY`. Check this lesson's enable script 
+(`enable-fresno`) for the sample value.  The user's browser will 
+get a cookie named 'seven5-fresno-session' that will have an 
+encrypted value in it.  For example, the cookie value might be 
+something like: 
+
+<pre>
+65a16749d4a090d2abcfee571bfc3c7e3264a0a88e2ddd839f25a1a94aadf2c31d80fb62b31ae6657a0f7a2449412a3dd2598a132ae7785feca037ec68764058a7f8
+</pre>
+
+If the client _could_ tamper with this value successfully, 
+it would allow them to masquerade as any user!  The primary benefit 
+of using this type of encrypted session data is to allow the server 
+to store a _persistent_ value in the client's browser--in our case 
+an email address plus an expiration time--that survives across server
+restarts.  Although Seven5 maintains the sessions in memory, 
+we can recover sessions that were created prior to this server's 
+process execution if we find a valid cookie.  Valid here means 
+"decrypts to something sensible" using `SERVER_SESSION_KEY`.
+
+You should pick a key if you plan to use any system like this in practice.
+You can compile a program called key2hex to do this (assuming you are
+at TUTROOT, the parent of the Godeps directory):
+
+{% highlight bash %}
+
+$ godep go install github.com/seven5/seven5/key2hex
+$ Godeps/_workspace/bin/key2hex thisisanexample0
+746869736973616e6578616d706c6530
+{% endhighlight %}
+
+Obviously, you should pick your own password rather than
+"thisisanexample0", we recommend using 
+[a strong password generator](https://strongpasswordgenerator.com)
+to generate a 16 character password.  Then you can use this in your
+enable script to set the secret for your server.
+
+If you have to change the key for some reason, this is not catastrophic.
+All previously created sessions will become  invalid (and the
+corresponding users immediately logged out) since their cookie will no 
+longer decrypt to a "sensible" value. 
+
+>Is this strategy vulnerable to known plaintext attacks? The plaintext
+can be easily determined from the Seven5 source code, so the scheme appears
+to have its security resting entirely on the inability of the attacker
+to generate a "legitimate" cookie value without knowing the secret. 
+
+<a name="pwd-client"></a>
+
+# Password Authentication: Client side
+
+## Setup for this lesson
+
+You should repeat the [previous lesson's setup](#setup-auth) but
+substitute the branch name "lesson-auth-client".
+
+## New URLs
+
+Our new version of fresno has two authentication URLs that were describe
+[previously](#pwd-allow) as neither fish nor fowl. The first of these 
+is "/auth" that is the authentication point for  submitting a username 
+and password.  It can also be used for other tasks, such as logging 
+*out*, that will be explained in later lessons. 
+
+The other, perhaps more suprising URL, is "/me" that allows a client to
+ask the server "who am I?" This uses the cookie stored in the user's 
+browser explained [previously](#pwd-allow) to determine who, if anyone,
+the current browser is logged in as.  You can see try this with curl, 
+of course:
+
+{% highlight bash %}
+$  curl localhost:5000/me
+no cookie
+{% endhighlight %}
+
+If you change the command above to be "curl -v" you can see that the
+server is actually returning a 401 error code. This is the user 
+interface of fresno's cue to display a page appropriate for a user 
+that is not logged in. 
+
+>In this and future lessons, we will frequently assume that you have
+a fresno binary running.  We will put links in the tutorial like
+the one in the next paragraph that point to localhost:5000.
+
+Navigate to the 
+[the fresno home page](http://localhost:5000/en/web/index.html)
+and you will see this:
+
+<img src="/assets/img/login1.png" hspace="30" vspace="30" 
+alt="the signup page" 
+style="border:1px solid black; width:80%;height:80%"/>
+
+## Client-side checking of /me
+
+The implementation of the client-side code for this page 
+(`client/index.go`) is responsible for checking the value returned from
+/me to see what to display on the upper right corner of the page.
+
+There are three common idioms for client-side Seven5 code in the 
+Start() method so we'll reproduce all of it here:
+
+{% highlight go %}
+//called after the dom is ready
+func (self indexPage) Start() {
+	chLoggedIn, chLoginErr := s5.AjaxGet(&shared.UserRecord{}, shared.URLGen.Me())
+	postsURL := shared.URLGen.Posts(shared.MOST_RECENT, 10)
+	var posts []*shared.Post
+	chPosts, chPostErr := s5.AjaxIndex(&posts, postsURL)
+
+	var haveLogin, havePosts bool
+	go func() {
+		for !haveLogin || !havePosts {
+			select {
+			case raw := <-chLoggedIn:
+				user := raw.(*shared.UserRecord)
+				haveLogin = true
+				loginParent.Dom().Append(
+					s5.SPAN(
+						s5.Class(h5),
+						s5.Text(user.EmailAddr),
+					).Build(),
+				)
+			case <-chLoginErr:
+				haveLogin = true
+				loginParent.Dom().Append(
+					s5.A(
+						s5.HtmlAttrConstant(s5.HREF, "login.html"),
+						s5.Text("login"),
+					).Build(),
+				)
+			case raw := <-chPosts:
+				havePosts = true
+				posts := raw.(*[]*shared.Post)
+				for i := 0; i < len(*posts); i++ {
+					self.addPost((*posts)[i])
+				}
+			case perr := <-chPostErr:
+				havePosts = true
+				displayErrorText("Unable to retreive posts: "+perr.Message, true)
+			}
+		}
+	}()
+}
+{% endhighlight %}
+
+<a name="ajax-idiom"></a>
+
+### The ajax idiom
+
+We are sending the server a request for a particular url, the return value of 
+shared.URLGen.Me() which works out to "/me" (see below for more on URLGen). 
+We are _also_ sending a request for the last 10 posts.  These calls are
+asynchronous, so any number may be launched before collecting the results.
+
+This is a common pattern in Seven5 client side programs:
+
+{% highlight go %}
+
+	channelContent, channelError := s5.AjaxGet(/*wire type*/, /*path*/)
+	go func() {
+		select {
+		case raw := <-channelContent:
+			content:=raw.(/*ptr to some content you are expecting*/)
+			/* create some UI based on the content*/
+		case errInfo := <-channelError:
+			/* display an error based on the error returned */
+		}
+	}
+{% endhighlight %}
+
+A few things to note about this idiom. 
+
+* First, the use of select would 
+block, so it must be run inside a go routine.  This is in keeping with the
+fact that it may take an unknown amount of time for the result of the 
+s5.AjaxGet() to return.  If you forget to use a go routine, you'll get a helpful 
+panic() from the runtime system. 
+* Second, the wire type for Get must be a
+pointer to a struct and the returned value is unpacked with the normal go 
+package encoding/json.  Any of the special tags on the structure related to 
+json decoding apply. For Ajax calls that do not need to send any data to 
+the server, only request data, it is customary to put a zero-valued instance 
+of the wire type as the parameter.  For calls that do send values to the server, 
+such as post or put, the _content_ of the first parameter is used to create the body
+via json encoding. 
+
+* Finally, only one of the two channels returned from
+an Ajax call will receive a value, never both.  For the content channel,
+the caller can safely assume that the value on the channel is the same as
+the wire type provided in the original call to the Ajax function.
+
+> We cannot achieve strong typing with the content channel because Seven5 
+> can't know the types in your program.  Further, we use json as the wire
+> format and this breaks some amount of type safety.  We encourage folks that
+> are interested in this issue to experiment with using protobufs, gobs, or
+> similar as the transport.  This would allow a more "tight rpc style" of 
+> calls from client to server rather than the "loosey-goosey" style of json.
+> See 
+>[this example](https://github.com/shurcooL/play/commit/e7e89367c071462ed0d150663bba54a78c06deed) how to use jsonrpc.
+
+## The Urlgen idiom
+
+The file `shared/urlgen.go` declares a single variable URLGen of type
+UrlGenerator. 
+
+{% highlight go %}
+type URLGenerator interface {
+	IndexPage() string
+	Auth() string
+	Me() string
+	UserRecord(udid string) string
+}
+{% endhighlight %}
+
+Much, acutely painful, experience has shown that it is error-prone 
+to have hard-coded string constants that correspond to the URLs in 
+your application.  It is downright suicidal to have "fmt.Sprintfs()" 
+that compute complex URLs in your application.  Use of such strings
+makes it hard to change the URL space of your application during 
+development.
+
+Besides the obvious benefit of once and only once, 
+typically the client and server need to share much "logic" around 
+the construction of URLs.  For example, you can see above that 
+the URLGenerator for fresno  has a method that allows one to create a 
+URL (really just the "path" part of a URL) for a given UDID, avoiding
+the deathtrap of having client an server both generating these 
+URLs via strings or fmt.Sprintf(). 
+
+Since a Seven5 application is go on both the client and server, you 
+can link the _same code_ into both sides--and breath a sigh of relief
+that things will stay in sync.  As an aside, if you prefer to 
+version your URLs for backward compatibility, this can be 
+accomplished with the use of the URLGenerator idiom.
+
+## The parent idiom
+
+It is common in web pages to have some part of the display that cannot
+be known until data is pulled from the server at run time.  In the
+example Start() method above, the dynamic portion of the UI is the
+value (or link) to be displayed in the upper right of the index page. 
+
+The "to be determined" bit is encoded in go code as
+the variable loginParent.  It is defined in the go code as:
+
+{% highlight go %}
+var (
+	loginParent = s5.NewHtmlId("div", "login-parent")
+)
+{% endhighlight %}
+
+The call to NewHtmlId searches the DOM for *exactly one* tag of type
+div with Id of login-parent.  That tag is in the HTML code 
+(`pages/template/index.html`):
+
+{% highlight html %}
+
+  <div class="row">
+  	<div id="login-parent" class="col-sm-offset-10 col-sm-2">
+   	</div>
+  </div>
+{% endhighlight %}
+
+The above html code results in no display when the page is initally
+loaded.  The content is filled in once the Ajax call in Start()
+is completed.
+
+It is important to note that the type HtmlId in Seven5 is aggresive
+about checking for the existence of the identified portion of the DOM.
+In the case of the go code above try changing the second argument
+to "xxxlogin-parent" and then rebuilding:
+
+{% highlight bash %}
+$ cd pages
+$ make
+gopherjs build -m -o  ../static/en/web/index.js ../client/index.go
+gopherjs build -m -o  ../static/en/web/signup.js ../client/signup.go
+gopherjs build -m -o  ../static/en/web/login.js ../client/login.go
+
+{% endhighlight %}
+
+If you reload the http://localhost:5000/en/web/index.html page now, 
+and look at the error console you'll see:
+
+<img src="/assets/img/sync1.png" hspace="30" vspace="30" 
+alt="the signup page" 
+style="border:1px solid black; width:80%;height:80%"/>
+
+This is only a cross-check between the go and HTML code,
+and it's still possible to get "out of sync" between the two, but this
+prevents at least some of the most common problems when renaming
+HTML elements.  It can also be triggered intentionally as a 
+"dead HTML code" check.
+
+<a name="pwd-server"></a>
+
+# Password Authentication: Server side
+
+## Setup for this lesson
+
+You should repeat the [lesson setup from two lessons ago](#setup-auth) but
+substitute the branch name "lesson-auth-server".
+
+## Performing a log in
+
+With the background covered in the previous two lessions, 
+let's log in to fresno.  Assuming fresno
+is running, go to the login in page at 
+http://localhost:5000/en/web/login.html:
+
+<img src="/assets/img/login2.png" hspace="30" vspace="30" 
+alt="the signup page" 
+style="border:1px solid black; width:80%;height:80%"/>
+
+>Don't forget to change your declaration of loginParent back and remove
+the "xxx" if you made that change in the previous lesson!
+
+The screenshot above shows the Log In button as enabled, but that does
+not happen until you have entered an email address and a password. 
+Naturally, this is implemented via [constraints](#constraints) in
+the function formIsBad() in `client/login.go`. 
+
+When you push the button, a bundle is sent to the /auth URL of the
+server.  This is accomplished by pulling the username and
+password out of attributes of the page, encoding a json blob, and
+the using the Ajax idiom as above.  Here is the code for the click
+handler of the login page from newLoginPage() in `client/login.go`:
+
+{% highlight go %}
+	button.Dom().On(s5.CLICK, func(evt jquery.Event) {
+		evt.PreventDefault()
+		var pap s5.PasswordAuthParameters
+
+		pap.Username = result.email.Value()
+		pap.Password = result.pwd.Value()
+		pap.Op = s5.AUTH_OP_LOGIN
+
+		contentCh, errCh := s5.AjaxPost(&pap, shared.URLGen.Auth())
+
+		go func() {
+			select {
+			case <-contentCh:
+				uicommon.SetCurrentPage(shared.URLGen.IndexPage())
+			case err := <-errCh:
+				if err.StatusCode == 401 {
+					displayErrorText("That's probably not your password.", false)
+				} else {
+					displayErrorText("Login trouble: "+err.Message, true)
+				}
+			}
+		}()
+	})
+{% endhighlight %}
+
+Two things to note about this code: First, there is no need for any
+logic for the case where the user tries to click the button without a
+username or password entered. That cannot happen due to the constraint
+that enables the button only when the form is populated.  Second, success
+case of the Ajax idiom uses a method SetCurrentPage() in the uicommon
+package to "brute force" the user onto a different page.
+
+Joe's password is set in the file `migrate/main.go` to "seekret".  When
+you click the button to log in as joe, you'll return to the index
+page, but it will look like this:
+
+<img src="/assets/img/loggedin1.png" hspace="30" vspace="30" 
+alt="the signup page" 
+style="border:1px solid black; width:80%;height:80%"/>
+
+
+## "Simple" in Seven5
+
+When we are discussing the server-side implementation of the password
+authentication, we'll refer to some Seven5 structs like "SimpleFoo" and
+the associated interface Foo.  In summary:
 
 {% highlight go %}
 
 type Foo interface{
 	//methods
 }
-
 type SimpleFoo struct{
 	//implementation
 }
-
 //which could be called, but it would take too long
-
 type FullImplementationOfFooThatsEnoughToStartWithButMightNotBeWhatYouWantLongTerm struct{
 //implementation	
 }
 
-//this is to differentiate from 
-type RawFoo struct {
-	
+{% endhighlight  %}
+
+This naming convention is used throughout Seven5, so you can recognize the
+intention of many types from their names. 
+
+## Server side of password authentication
+
+Seven5 has a type SimpleSessionManager that can handle creating
+and destroying sessions and coordinating this with a cookie maintained
+on the user's browser. However, it cannot know the application specific
+definition of the semantics of "log in".  Seven5 provides an interface
+ValidatingSessionManager which you can implement and then pass to another
+Seven5 type: SimplePasswordHandler. 
+
+This implies a layering like this, with the implementor in parenthesis:
+
+<pre>
+SimpleSessionManager (seven5) 
+	MyValidatingSessionManager (you)  
+		SimplePasswordHandler (seven5)
+</pre>
+
+The go code basics for this particular layering applied to fresno is in 
+`validating_sm.go`.
+
+{% highlight go %}
+
+// fresnoValidatingSessionManager knows how to check credentials, interact
+// with sessions, etc.
+type fresnoValidatingSessionManager struct {
+	*s5.SimpleSessionManager
 }
 
-//which could be called
+// newFresnoValidatingSessionManager creates a new FresnoValidatingSessionManager
+// but returns it as an s5.ValidatingSessionManager to insure that we meet the
+// interface it requires.
+func newFresnoValidatingSessionManager() s5.ValidatingSessionManager {
+	result := &fresnoValidatingSessionManager{}
+	result.SimpleSessionManager = s5.NewSimpleSessionManager(result)
+	return result
+}
 
-type IfYouThinkYouUnderstandThisFooItsLikelyYouDontSoJustLeaveItAlone struct{
-	
+{% endhighlight  %}
+
+### ValidatingSessionManager 
+
+ValidatingSessionManager is an interface to allow you to implement
+your application-level semantics:
+
+{% highlight go %}
+type ValidatingSessionManager interface {
+        SessionManager
+        ValidateCredentials(username, password string) (string, interface{}, error)
+        SendUserDetails(i interface{}, w http.ResponseWriter) error
+        GenerateResetRequest(string) (string, error)
+        UseResetRequest(string, string, string) (bool, error)
 }
 {% endhighlight  %}
+
+We will ignore the password reset code until a later lesson, but the
+methods ValidateCredentials and SendUserDetails are worth discussing
+now.  These methods are used for checking the password and transmitting
+a user record to the client side, respectively. 
+
+These are implementations of these two methods from `validating_sm.go`;
+we have removed some of the error checking for clarity:
+
+{% highlight go %}
+// Check that a username and password are as we have them in the database.
+// If they match, we return the user's UDID as the uniq value for the session
+// plus the user data record.
+func (self *fresnoValidatingSessionManager) ValidateCredentials(username, pwd string) (string, interface{}, error) {
+	q, _ := qbs.GetQbs()
+	defer q.Close()
+
+	var ur shared.UserRecord
+	u := strings.TrimSpace(username)
+	p := strings.TrimSpace(pwd)
+	if len(u) == 0 || len(p) == 0 {
+		return "", nil, err
+	}
+	cond := qbs.NewEqualCondition("email_addr", u).AndEqual("password", p)
+	if err := q.Condition(cond).Find(&ur); err != nil {
+		if err != sql.ErrNoRows {
+			return "", nil, err
+		}
+		//normal case of bad pwd
+		return "", nil, nil
+	}
+	//return the udid as uniq part,then the rest of the object as user data
+	return ur.UserUdid, &ur, nil
+}
+
+// SendUserDetails is responsible for filtering out fields that we may not wish
+// to send to the client side of the wire when returning a user record from /me
+func (self *fresnoValidatingSessionManager) SendUserDetails(i interface{}, w http.ResponseWriter) error {
+	ur := i.(*shared.UserRecord)
+	ur.Admin = false //even if they are!
+	ur.Disabled = false
+	ur.Password = ""
+	return s5.SendJson(w, ur)
+}
+
+{% endhighlight  %}
+
+
+<a name="posts"></a>
+
+# Display Blog Posts
+
+## Setup for this lesson
+
+You should checkout branch "lesson-display-posts" and do the 
+[godep dance](#godep-dance) to get dependencies and build fresno.
+
+## The upside-down tutorial
+
+This tutorial, so far, has not really been about blogging.  The first
+dozen-or-so lessons have been about all the _other_ things that you
+need to understand to make a real, working application.  We have
+discussed databases, migrations, deployment, dependency 
+management, password authentication, code conventions for a
+real application, and some REST with a sprinkle of data interchange. 
+This was by design; most tutorials leave out all the "other stuff" 
+and one ends up with an app that does a few simple things, 
+usually running locally, and then the "hard part" comes when you try 
+to make it real.  This tutorial has covered all the hard parts already, 
+now we can focus on getting to the semantics of our application.
+
+## Index methods
+
+Index methods are for listing a collection of identical rest resources,
+such as blog posts. In fresno, we use a database query to get the list 
+of posts to return to the client side.  The index method takes some query parameters to allow the client side to do pagination if it desires. 
+Finally, we do a slight bit of adjustment to the 
+joined user record that represents the author of the post. 
+
+The
+code, from `resource/post.go`, is:
+{% highlight go %}
+
+func (self *PostResource) IndexQbs(pb s5.PBundle, q *qbs.Qbs) (interface{}, error) {
+	limit := int(pb.IntQueryParameter(shared.LIMIT_PARAM, 10))
+	offset := int(pb.IntQueryParameter(shared.OFFSET_PARAM, 0))
+	q, err := qbs.GetQbs()
+	if err != nil {
+		log.Printf("unable to get db connection:%v", err)
+		return nil, s5.HTTPError(http.StatusInternalServerError, fmt.Sprintf("unable to get db connection:%v", err))
+	}
+	var posts []*shared.Post
+	err = q.Limit(limit).Offset(offset).OrderByDesc("created").FindAll(&posts)
+	if err != nil && err == sql.ErrNoRows {
+		return []*shared.Post{}, nil
+	}
+	if err != nil {
+		return nil, s5.HTTPError(http.StatusInternalServerError, fmt.Sprintf("error in qbs find: %v", err))
+	}
+	for _, p := range posts {
+		author := p.Author
+		author.EmailAddr = ""
+		author.Password = ""
+	}
+	return posts, nil
+}
+{% endhighlight  %}
+
+## Joiner
+
+Frequently, you will want a web page to display a series of broadly 
+similar items, such as blog posts in fresno. Seven5 provides two types
+that aid in this process: Joiner and Collection.  A Collection models
+a sequence of items to be displayed on the screen and the Joiner does
+the work of mapping an individual model--an element of the collection--
+into HTML that should be added or removed from the screen.  A Collection
+must be created with an associated Joiner.
+
+Broadly, the common sequence of actions for displaying a list of
+items of a resource type:
+
+1. Make [Ajax call](#ajax-idiom) to the server
+2. Create a model from each result item returned
+3. Add model to collection
+
+The last of these steps will end up calling the Add() method on the
+Joiner to display each model on the screen. 
+
+Step 2 may seem strange at first, since we are effectively 
+decoding the raw content into one "model", the wire type used with the
+Ajax call, and then creating a second model from this first one. This is 
+typically necessary because the "model"  in step 2 is an explicit model (in the 
+[MVC](http://en.wikipedia.org/wiki/Model–view–controller) sense) whereas
+the model in step 1 just represents what was sent over the wire. 
+
+Further the model in step 2 will typically use 
+[attributes](#constraints) because it will need to have these types
+for connecting to the display.  In step 1 a value might be a string,
+where in step 2 it would be a StringAttribute.  Finally, often the
+display needs are different from the simple values sent over the wire
+so some processing must be done to the wire types to create the model
+values in step 3.  For example, in Fresno the server sends (wire)
+the post author's data as first name and last name, both as strings, but
+the display wants a single StringAttribute for name.
+
+<a name="treebuilding"/>
+
+### Building a tree
+
+The first job of a joiner is to build a tree of HTML nodes that can
+be added to the DOM for displaying the model.  Seven5 provides a
+number of functions to add in this tree construction process.  The
+functions that create DOM elements are all upper-case names that
+correspond exactly to the HTML element of the same name. For example:
+
+
+{% highlight go %}
+
+s5.DIV(
+	s5.DIV(
+		s5.SPAN(
+			s5.Text("foo"),
+		),
+		s5.SPAN(
+			s5.Text("bar"),
+		),
+	),
+)
+
+{% endhighlight  %}
+
+The snippet above uses formatting to make the tree structure easier to
+see.   This snippet creates a div element, which has a div element as
+its child, which has two children, both of which are span elements.
+The span elements each display a constant string of text.
+
+You can easily add some CSS classes to make your HTML tree look nicer
+when it appears on screen:
+
+{% highlight go %}
+
+var (
+	row = s5.NewCssClass("row")
+	offset1 = s5.NewCssClass("col-sm-offset-1")
+	col10 = s5.NewCssClass("col-sm-10")
+)
+
+s5.DIV(
+	s5.Class(row)
+	s5.DIV(
+		s5.Class(offset1)
+		s5.Class(col10)
+		s5.SPAN(
+			s5.Text("foo"),
+		),
+		s5.SPAN(
+			s5.Text("bar"),
+		),
+	),
+)
+
+{% endhighlight  %}
+
+It is customary to put any CSS classes "first" in the list of decendents
+from a given node.  We have done that above in adding the "row" class
+to the top level node and two [bootstrap](http://getbootstrap.com/css/) 
+classes to the inner div. 
+
+This should make it clear that in fact the _type_ of elements passed
+as parameters to a call like DIV() or SPAN() is dealt with at run-time.
+There are many different types of things that can be present in the 
+"child list" to a call that creates a node.  Let's bind a click handler 
+for the span "foo":
+
+{% highlight go %}
+
+var (
+	row = s5.NewCssClass("row")
+	offset1 = s5.NewCssClass("col-sm-offset-1")
+	col10 = s5.NewCssClass("col-sm-10")
+)
+
+s5.DIV(
+	s5.Class(row)
+	s5.DIV(
+		s5.Class(offset1)
+		s5.Class(col10)
+		s5.SPAN(
+			s5.Text("foo"),
+			s5.Event(s5.CLICK, func(evt jquery.Event) {
+				print("clicked foo")
+			}),
+		),
+		s5.SPAN(
+			s5.Text("bar"),
+		),
+	),
+)
+
+{% endhighlight  %}
+
+It is customary to put event handlers such as the one above immediately
+before any child nodes.  If they are placed after child nodes, it becomes
+hard to see which element the event handler is bound to.
+
+Once you have your tree constructed in code, you typically call Build()
+on it and add that value to some fixed place on the screen. For example:
+
+{% highlight go %}
+
+var (
+	row = s5.NewCssClass("row")
+	offset1 = s5.NewCssClass("col-sm-offset-1")
+	col10 = s5.NewCssClass("col-sm-10")
+
+	parent = s5.NewHtmlId("div", "item-parent")
+
+)
+
+tree:=s5.DIV(
+	s5.Class(row)
+	s5.DIV(
+		s5.Class(offset1)
+		s5.Class(col10)
+		s5.SPAN(
+			s5.Text("foo"),
+			s5.Event(s5.CLICK, func(evt jquery.Event) {
+            	print("clicked foo")
+            }),
+		),
+		s5.SPAN(
+			s5.Text("bar"),
+		),
+	),
+).Build()
+parent.Dom().Append(tree)
+ 
+{% endhighlight  %}
+
+### Binding values from the model
+
+In the client-side code (`client/index.go`) for the index page, we
+want to display the title on screen based on the model that 
+represents what was retreived from the server. 
+
+Here's the top part of Add(), one of the two methods (with Remove()) required
+by the Joiner interface that we are implementing:
+
+{% highlight go %}
+func (self *indexPage) Add(i int, m s5.Model) {
+	model := m.(*postModel)
+	tree := s5.DIV(
+		s5.Class(row),
+		s5.DIV(
+			s5.Class(blogEntry),
+			s5.Class(colOffset1),
+			s5.Class(col11),
+			s5.DIV(
+				s5.Class(row),
+				s5.SPAN(
+					s5.Class(col12),
+					s5.Class(h3),
+					s5.TextEqual(model.title),
+				),
+			),
+			s5.DIV(
+				s5.Class(row),
+				s5.SPAN(
+					s5.Class(col12),
+					s5.Class(h5),
+					s5.SPAN(
+						s5.TextEqual(model.authorName),
+					),
+					s5.SPAN(
+						s5.Text("@"),
+					),
+					s5.SPAN(
+						s5.TextEqual(model.date),
+					),
+				),
+			),
+	//elided for space
+}
+
+{% endhighlight  %}
+
+The critical lines are the first one where we extract the particular
+model we are expecting, and the three calls to s5.TextEqual().  The
+TextEqual() method takes an StringAttribute and binds its content
+to the visible portion (textual part) of the tag it is nested inside.
+Because this uses [constraints](#constraints), if you change the value
+in the model, the screen will be updated appropriately. 
+
+## Handling the index method for posts
+
+Following our three steps above,  fresno now has been improved to 
+load the blog posts over the network.  First it uses
+the [ajax idiom](#ajax-idiom) in Start() (in `client/index.go`) to
+request the posts.  At this point, it doesn't try to do pagination.
+If the results are returned successfully, it receives a slice of pointers
+to shared.Post() (`shared/post.go`).  It then calls addPost()
+which takes the new shared.Post() object and converts it to a
+postModel, and finally adds that to the collection posts.
+
+It is worth noting that the posts collection has to now be initialized
+when we create the page object.  This collection is "per-page state"
+that exists during the entire time the page is visible in the browser.
+We mention this per-page state because it is easy to forget about the
+fact that there is code that must be holding state to make the UI respond
+to various actions by the user, or data recevied via the network. 
+Because of constraints, you typically can just build your Seven5 data
+structures and then _let it run_.
+
+After our work on the index page, fresno now looks like this:
+
+<img src="/assets/img/posts1.png" hspace="30" vspace="30" 
+alt="the signup page" 
+style="border:1px solid black; width:80%;height:80%"/>
+
 

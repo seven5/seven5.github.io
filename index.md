@@ -3,7 +3,7 @@ title: Seven5
 layout: page
 ---
 
-# Seven5
+# Seven5: An Opinionated, Go-only Toolkit For Modern Web Applications
 
 <img src="/assets/img/gargoyle-1.jpg" hspace="30" vspace="30" 
 alt="the seven5 gargoyle" style="width:50%;height:50%; float:right;">
