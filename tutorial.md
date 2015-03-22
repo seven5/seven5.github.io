@@ -2706,13 +2706,14 @@ the browser settings and automatic device selection based on browser settings,
 such as switching to "/en/mobile" for a mobile phone-based browser.
 
 
-## Components
+## StaticComponents
 
 The mechanism in Seven5 for handling the mapping between the URL space and
-the filesystem (really the `static` directory) is Components.  This is only for
-user-visible URLs, not URLs in the REST namespace ("/rest").   In the 
-setup() function of fresno (`fresno/main.go`) there are four statements 
-of configuration related to Components:
+the filesystem (really the `static` directory) is 
+[StaticComponent](https://gowalker.org/github.com/seven5/seven5#StaticComponent).  
+This is only for user-visible URLs, not URLs in the REST namespace ("/rest").   
+In the  setup() function of fresno (`fresno/main.go`) there are four statements 
+of configuration related to StaticComponents:
 
 {% highlight go %}
 	//what do we do if given empty URL, note we use the SINGULAR here
@@ -2727,21 +2728,25 @@ of configuration related to Components:
 		homepage, result.heroku.IsTest(), postComponent, indexComponent)
 
 {% endhighlight %}
-The first statement creates a ComponentResult that specifies what is to occur
-when the user comes to the homepage (URL is "/"). 
-The  middle two lines shown create Components.   The last statement uses those 
+The first statement creates a 
+[ComponentResult](https://gowalker.org/github.com/seven5/seven5#ComponentResult) 
+that specifies what is to occur when the user comes to the homepage (URL is "/"). 
+The  middle two lines shown create StaticComponents.   The last statement uses those 
 two components as initialization parameters (the last two) in creating a 
 SimpleComponentMatcher. 
 
-SimpleComponentMatcher is a utility for serving up static files from a static
-directory (note the staticDir parameter to NewSimpleComponentMatcher).  It
-has many options but we are primarily interested in how it uses the homepage,
+[SimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#SimpleComponentMatcher)
+is a utility for serving up static files from a static
+directory (note the staticDir parameter to 
+[NewSimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#NewSimpleComponentMatcher)).
+It has many options but we are primarily interested in how it uses the homepage,
 postComponent, and indexComponent local varibles.
 
 ### ComponentResult
 
 The variable homepage is an instance of the type ComponentResult.  A 
-ComponentResult is used when a Component wishes to communicate with the matcher.
+[ComponentResult](https://gowalker.org/github.com/seven5/seven5#ComponentResult) 
+is used when a StaticComponent wishes to communicate with the matcher.
 It has a number of fields, but generally the most important ones are Status,
 Redir, and Path.  The Status field is an HTTP response code.  If the Status
 code is 200 (OK) then the Path field is consulted for what static content
@@ -2763,11 +2768,17 @@ scripts.
 
 ### SimpleIdComponent
 
-SimpleIdComponent is a utility for creating a Component that understands URLs
-like /foo/123/verb.  The parameters provided to NewSimpleIdComponent() are
-the part of the URL space ("post" in our example) to use and three functions
-that provide "checks" on the URL.  These are the existCheck, newCheck, and
-viewEditCheck.  The first of these allows a function to provided
+[SimpleIdComponent](https://gowalker.org/github.com/seven5/seven5#SimpleIdComponent) 
+is a utility for creating a Component that understands URLs
+like /foo/123/verb.  The parameters provided to 
+[NewSimpleIdComponent](https://gowalker.org/github.com/seven5/seven5#NewSimpleIdComponent) 
+are the part of the URL space ("post" in our example) to use and three functions
+that provide "checks" on the URL.  These are the 
+[ExistCheck](https://gowalker.org/github.com/seven5/seven5#ExistsCheck), 
+[NewCheck](https://gowalker.org/github.com/seven5/seven5#NewCheck), and
+[ViewEditCheck](https://gowalker.org/github.com/seven5/seven5#ViewEditCheck).
+
+The first of these allows a function to provided
 that can check for the existence of a particular id, such as 123.  If it
 fails, the Component will indicate that a 404 should immediately be genarated.
 If it succeeds, processing simply continues.  If nil is provided as this 
@@ -2796,8 +2807,12 @@ returns a false, the user's browser will receive a 401 response code
 
 #### CookieMapper and SessionManager
 
-If you are wondering why the parameters to NewSimpleComponentMatcher included
-the application's CookieMapper ad SessionManager, the reason is the PBundle
+If you are wondering why the parameters to 
+[NewSimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#NewSimpleComponentMatcher)
+included the application's 
+[CookieMapper](https://gowalker.org/github.com/seven5/seven5#CookieMapper)
+and [SessionManager](https://gowalker.org/github.com/seven5/seven5#SessionManager), 
+the reason is the [PBundle](https://gowalker.org/github.com/seven5/seven5#PBundle)
 parameter to the functions above.  To create a proper PBundle, which may 
 include session data encoded in a cookie, the matcher muster interact with
 the CookieMapper and SessionManager.   Put another way, to correctly understand
@@ -2815,7 +2830,9 @@ post, such as "new.html" or "edit.html"
 
 ## SimpleComponentMatcher
 
-The type SimpleComponentMatcher is responsible for taking in a URL for 
+The type 
+[SimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#SimpleComponentMatcher) 
+is responsible for taking in a URL for 
 content (not a rest resource) and finding the static file to serve.  In
 considering the call to NewSimpleComponentMatcher() at the beginning of
 this lesson, we have discussed the first two parameters the CookieMapper
