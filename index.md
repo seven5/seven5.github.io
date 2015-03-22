@@ -11,7 +11,7 @@ alt="the seven5 gargoyle" style="width:50%;height:50%; float:right;">
 ## Why
 Look, let's just be honest and get it out now: 
 
-> _You're here because you hate javascript._  
+> _You're here because you hate javascript._ 
 
 You hate all this dynamic crap including, but not limited to, ruby, rails,
 python, django, angular, and the webbish-dynamic-terdball-of-the-month. 
@@ -62,6 +62,12 @@ important.  You can hire many name consultants who will tell you "go"
 is a terrible name for as many reasons as you have money to pay them.
 Seven5's mascot is one of the gargoyles from _Notre Dame_ because he looks
 threatening. We hope to scare away some javascript people.
+
+## The current release
+The current [release](https://github.com/seven5/seven5/releases) of Seven5
+is [cure](http://en.wikipedia.org/wiki/The_Cure), and the next release,
+when it is ready, will be called [dcd](http://en.wikipedia.org/wiki/Dead_Can_Dance).
+
 
 <a role="button" href="/tutorial.html" class="btn btn-primary">
 Read The Tutorial</a>
