@@ -65,7 +65,7 @@ threatening. We hope to scare away some javascript people.
 
 ## The current release
 The current [release](https://github.com/seven5/seven5/releases) of Seven5
-is [cure](http://en.wikipedia.org/wiki/The_Cure), and the next release,
+is [cure](http://en.wikipedia.org/wiki/The_Cure).  The next release,
 when it is ready, will be called [dcd](http://en.wikipedia.org/wiki/Dead_Can_Dance).
 
 
