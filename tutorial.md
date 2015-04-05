@@ -1204,7 +1204,7 @@ Constraints are not a free lunch, they require work from you
 in structuring your application.  They require you to think 
 carefully about the inputs and outputs of your user interface, and 
 require clear articulation of the processing to be done.
-The articulation must be done so that the processing of inputs to
+This articulation must be done so that the processing of inputs to
 outputs can be encoded in constraint functions.  Our experience has
 shown that the effort required to structure a UI with constraints is
 easily outweighed by the benefits gained in cleaner UI code.
