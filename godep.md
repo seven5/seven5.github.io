@@ -5,7 +5,7 @@ layout: detour
 
 # Godeps detour
 
-When developing the tutorial or experimenting with different software versions
+When developing the tutorial or experimenting with different software versions,
 the easiest way is to temporarily set your GOPATH to `TUTROOT/external` and
 use `go get` to download software into that "staging area":
 
@@ -14,7 +14,7 @@ $ cd
 $ export GOPATH=$TUTROOT/external
 $ go get github.com/tools/godep
 $ go get github.com/gopherjs/gopherjs
-$ #etc for whatever software you want to install into the staging area
+$ # etc. for whatever software you want to install into the staging area
 $ ls TUTROOT/external/src/github.com
 {% endhighlight %}
 
@@ -33,13 +33,12 @@ into the Godeps folder.  At this point, you can `source enable-tutorial`
 and your environment will return to normal but with your new/different
 vendored dependencies.
 
-Complicating this is that the there three tools that have to be "by hand" added
+This is made more complicated by three tools that have to be added manually
 to the project to create a working tutorial.  These are the packages 
-"github.com/gopherjs/gopherjs", its subpackage jquery, "github.com/tools/godep".  
+`github.com/gopherjs/gopherjs`, its `jquery` subpackage, and `github.com/tools/godep`.
 There are some helpful lines, usually commented out, at the top of `fresno/main.go` 
-that can help you force godep save to put these packages into the Godeps 
-directory.  You can't actually compile the project with these lines uncommented
-but it is enough to fool godep save.
-
+that can help you force the `godep save` command to put these packages into the
+Godeps  directory.  You can't actually compile the project with these lines
+uncommented, but it is enough to fool `godep save`.
 
 [Return To Main Tutorial](tutorial.html#godep)

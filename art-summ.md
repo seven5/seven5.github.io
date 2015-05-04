@@ -6,9 +6,9 @@ layout: article
 # Key Elements Of Seven5
 
 Seven5 is a toolkit for constructing modern web applications.  Applications
-written against Seven5 are written go---_entirely_ in go.  Seven5 provides
+written against Seven5 are written in Go---_entirely_ in Go.  Seven5 provides
 facilities for developing both the server and client portion of a web 
-application as well as for exchanging go data structures between them. 
+application as well as for exchanging Go data structures between them. 
 
 This article is intended to provide a light overview of the key ideas of
 [Seven5](http://github.com/seven5/seven5).  More detail, including a fairly
@@ -19,22 +19,21 @@ can ask for help in the [google group](https://groups.google.com/forum/#!forum/s
 Seven5 is so named because the author began work on it while living in
 Paris, France and all the postal codes for Paris begin with 75.
 
-
 ## Both sides of the wire
 
 In this article, we will focus most of our attention on the _client_ side of
 an application. In the past, one would have been forced to build this part
 in [Javascript](https://www.destroyallsoftware.com/talks/wat). The 
-primary reason for this focus on the client side is that go on the server 
+primary reason for this focus on the client side is that Go on the server 
 side is far more common, and far more commonly understood.  The server portion
-is what most people expect a "go-based web toolkit" to be. 
+is what most people expect a "Go-based web toolkit" to be. 
 
-To build go programs that run in a browser, they must be compiled to Javascript.
+To build Go programs that run in a browser, they must be compiled to Javascript.
 For this, Seven5 expects you to use the wonderful [Gopherjs](http://www.gopherjs.org)
-compiler.  "It just works" is the perhaps the highest compliment you can give to a 
+compiler.  "It just works" is perhaps the highest compliment you can give to a 
 compiler, and that certainly applies here.   It is a testament to its quality
 that this article won't even mention Gopherjs further, in the same way that it 
-will not mention that the go compilation tools on the server 
+will not mention that the Go compilation tools on the server 
 ([6g](https://golang.org/cmd/6g/) and the like)--because _they just work_.
 
 ## Modern
@@ -43,7 +42,7 @@ We have referred to modern web applications previously.  To be more precise, we
 mean applications which do *not* generate web content on the server but rather 
 supply an API for clients--including a web browser--to obtain content from.  The
 returned content is then formatted for display.  The "server side" of a Seven5 
-app has two basic tasks: Respond to requests for static, unchanging files and 
+app has two basic tasks: respond to requests for static, unchanging files and 
 respond to an API of the developer's choice.  Seven5 expects that API to be 
 [RESTful](http://en.wikipedia.org/wiki/Representational_state_transfer), although
 this is not  because REST is the best possible choice, but rather because REST is 
@@ -74,10 +73,10 @@ func (p myPage) getPaymentMethods() {
 {% endhighlight %}
 
 Two conventions about Seven5 can be seen in this example.  First, Seven5 is
-imported into a go program as `s5`.  For the server side of an application
+imported into a Go program as `s5`.  For the server side of an application
 this corresponds to `github.com/seven5/seven5` but for a client program, as
 above, this corresponds to the package `github.com/seven5/seven5/client`. 
-Second, the type being exchanged `PaymentMethod` is part of a package called
+Second, the `PaymentMethod` type being exchanged is part of a package called
 "wire".  Wire types are those that are exchanged between the client and server.
 A package that includes wire types is compiled _by both the client and server_ 
 since it refers to the structures being exchanged between them.  There is no 
@@ -104,9 +103,9 @@ Ajax call.  Seven5 provides a tree-building library for generating
 be attached to a page.
 
 This is a trivial example of a code snippet that builds a small DOM tree.
-This tree has a `div` HTML element with two children that also `div` elements.
-Each child `div` has a `span` element child, and the text to display in these
-`span` elements is a fixed string.
+This tree has a `div` HTML element with one child that is also a `div` element.
+The child has in turn two `span` child elements, and the text to display in
+these `span` elements is a fixed string.
 
 {% highlight go %}
 
@@ -202,7 +201,7 @@ s5.DIV(
 Seven5 uses a technique called "constraints" to make building the user interface
 of a web application easier.  A _constraint_ is simply a function that computes
 a result.  The values that a constraint operates on--its parameters--and 
-produces are called _attributes_.   These correspond directly to go's
+produces are called _attributes_.   These correspond directly to Go's
 functions and variables.
 
 Let's define a structure that has a few attributes so we can see how this will
@@ -218,7 +217,7 @@ type lightSwitches struct {
 {% endhighlight  %}
 
 This structure definition uses `s5.BooleanAttribute` and `s5.StringAttribute` 
-instead of go's builtin `bool` and `string` because Seven5 does some extra 
+instead of Go's builtin `bool` and `string` because Seven5 does some extra 
 bookkeeping around each attribute.  Let's define a constraint, which is
 just a function:
 
@@ -242,7 +241,7 @@ represent the _value_ of an attribute.
 Let's attach the constraint now:
 
 {% highlight go %}
-	//ls is an instance of the type lightSwitches
+	// ls is an instance of the type lightSwitches
 
 	ls.output.Attach(
 		s5.NewSimpleConstraint(
@@ -252,25 +251,25 @@ Let's attach the constraint now:
 
 {% endhighlight  %}
 
-This snippet bears scrutiny.  This attaches the constraint function we've written
-above `eitherSwitchIsOn` to the string field `output`.  The inputs to the
-function are the two other boolean fields `s1` and `s2`.  Once attached,
+This snippet bears scrutiny.  It attaches the `eitherSwitchIsOn` constraint
+function we've written above to the `output` string field.  The inputs to the
+function are the two other boolean fields, `s1` and `s2`.  Once attached,
 Seven5 guarantees that this constraint is always met. 
 
 > For the curious, the algorithm used to insure constraint evaluation is
-> both correct, and close to minimal is [eval_vite](ftp://ftp.cc.gatech.edu/pub/gvu/tr/1993/93-15.pdf) from 93.
+> both correct and close to minimal is
+> [eval_vite](ftp://ftp.cc.gatech.edu/pub/gvu/tr/1993/93-15.pdf) from 1993.
 
-In an of itself, this ability to have functions of variables, even ones that are
+In and of itself, this ability to have functions of variables, even ones that are
 maintained automatically, would be of little value.  The big win comes from
 the ability to *connect* attributes and constraints to the DOM that is 
-generated by a web applications.  Let's connect our switches and the output
+generated by a web application.  Let's connect our switches and the output
 to the DOM:
-
 
 {% highlight go %}
 
-	//onClass is a css class that changes the display for "on"
-	//ls is an instance of the type lightSwitches
+	// onClass is a css class that changes the display for "on"
+	// ls is an instance of the type lightSwitches
 
 s5.DIV(
 	s5.Class(row)
@@ -297,7 +296,6 @@ s5.DIV(
 	),
 )
 
-
 {% endhighlight  %}
 
 In this example, we have added three additional constraints to the attributes
@@ -311,8 +309,8 @@ attribute that can be manipulated through style sheets.
 
 The other constraint is that the text of the third span will always be the
 same as the value of the field `ls.output`.   Since this is computed by
-the constraint we wrote above, value displayed is always the logical
-or of the two switches.
+the constraint we wrote above, the displayed value is always the logical
+OR of the two switches.
 
 Finally, we have added two small event handlers, one for each "switch".  When
 the appropriate "switch" text is clicked, the value of the boolean `s1` or
@@ -322,11 +320,11 @@ causes the constraint on the last span's text content to be updated appropriatel
 Also, the constraint that chooses to add or remove the CSS class `onClass` will 
 update the display for the particular switch span that is clicked on.
  
-This type of event  handler is common is Seven5: once you have expressed your
+This type of event handler is common in Seven5: once you have expressed your
 display as a set of constraints, the event handler's job is simply to update
-the state, Seven5 takes care of an necessary screen updates and is careful to
+the state, Seven5 takes care of any necessary screen updates, and is careful to
 _not_ update things that are not affected by the change in the data. 
-Constraints are not a free lunch, they require work from you 
+Constraints are not a free lunch: they require work from you 
 in structuring your application.  They require you to think 
 carefully about the inputs and outputs of your user interface, and 
 require clear articulation of the processing to be done.
@@ -339,11 +337,9 @@ easily outweighed by the benefits gained in cleaner UI code.
 
 In this short article, we've touched on three things that make building a 
 modern web application easier when you use Seven5. First, the ability to
-use the familiar go abstraction of channels to handle asynchronous
-connections from a web browser to the server.  Second, Seven5's tree
-building utilities that make it convenient to programmatically construct
+use the familiar Go abstraction of channels to handle asynchronous
+connections from a web browser to the server.  Second, Seven5's tree-building
+utilities that make it convenient to programmatically construct
 trees of DOM elements that reflect the semantics of your app.  Finally,
 we discussed Seven5's use constraints to make the connections between
 application data structures and the user interface shown in the browser.
-
-
