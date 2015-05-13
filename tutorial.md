@@ -216,7 +216,7 @@ This document was written with postgres version 9.3, but other versions in the
 
 ## Local database setup
 
-On your local system you'll need to create the database "freso"
+On your local system you'll need to create the database "fresno"
 
 {% highlight bash %}
 $ createdb fresno
