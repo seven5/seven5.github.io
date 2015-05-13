@@ -371,7 +371,7 @@ let's try to access the post table to see what posts are available.
 
 ## Preparation for this lesson
 
-As above, make sure you have the databse running, run the migrations (it
+As above, make sure you have the database running, run the migrations (it
 doesn't hurt to run them again), build the fresno server, and start it running.
 
 ## Getting some data
