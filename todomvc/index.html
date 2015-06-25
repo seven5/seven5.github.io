@@ -1,12 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-framework="javascript">
 	<head>
 		<meta charset="utf-8">
-		<title>TodoMVC In Concorde</title>
-		 <link href="bootstrap/css/bootstrap.css" rel="stylesheet">
-		 <link href="bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
-
-		 <!-- app specific styles from todomvc.org -->
+		<title>Seven5 • TodoMVC</title>
 		<link rel="stylesheet" href="base.css">
 	</head>
 	<body>
@@ -15,28 +11,41 @@
 				<h1>todos</h1>
 				<input id="new-todo" placeholder="What needs to be done?" autofocus>
 			</header>
-			<!-- This section should be hidden by default and shown when there are todos -->
 			<section id="main">
 				<input id="toggle-all" type="checkbox">
 				<label for="toggle-all">Mark all as complete</label>
-				<ul id="todo-list"/>
+				<ul id="todo-list"></ul>
 			</section>
 			<footer id="footer">
-				<!-- This should be `0 items left` by default -->
-				<span id="todo-count"><strong>1</strong> 
-				item<span id="plural"></span></span>
-				<!-- Hidden if no completed items are left ↓ -->
-				<button id="clear-completed">Clear completed (<span id="num-completed"></span>)</button>
+				<span id="todo-count"><strong></strong> item<span id="plural"></span> left</span>
+				<!--
+				  - seven5 doesn't have a client side router like most JS frameworks.
+				  - Pull requests welcome!
+				  -->
+				<!--
+				<ul id="filters">
+					<li>
+						<a href="#/" class="selected">All</a>
+					</li>
+					<li>
+						<a href="#/active">Active</a>
+					</li>
+					<li>
+						<a href="#/completed">Completed</a>
+					</li>
+				</ul>
+				-->
+				<button id="clear-completed">Clear completed</button>
 			</footer>
 		</section>
+		<span style="display:none" id="num-completed"></span>
 		<footer id="info">
 			<p>Double-click to edit a todo</p>
-			<p>Created by <a href="http://github.com/iansmith">iansmith</a></p>
-			<p>Part of <a href="https://github.com/seven5/seven5/tree/master/concorde">Concorde</a></p>
-			<p><a href="https://github.com/seven5/seven5/blob/master/todomvc/main.go">Source Code</a></p>
+			<p>Created by <a href="http://twitter.com/oscargodson">Oscar Godson</a></p>
+			<p>Seven5 version by <a href="https://github.com/iansmith">Ian Smith</a></p>
+			<p>Part of <a href="http://todomvc.com">TodoMVC</a></p>
 		</footer>
-		<!-- Scripts here. Have to load jquery, then the application code compiled with gopherjs↓ -->
-	    <script src="jquery-2.1.0.js"></script>
-		<script src="todomvc.js"></script>
+    <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="todomvc.js "></script>
 	</body>
 </html>
