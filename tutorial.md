@@ -11,7 +11,7 @@ This tutorial builds a blog engine called Fresno. The world does not need
 more blog engines; Seven5 needs a tutorial based around an application
 that has the minimal amount of application-specific things for you to learn.
 
-> You can ask questions about the tutorial in the 
+> You can ask questions about the tutorial in the
 [Seven5 Google Group](https://groups.google.com/forum/#!forum/seven5).
 
 ## Typography in this document
@@ -30,8 +30,8 @@ shell, and expected output is placed immediately afterward.
 We use the same "boxed" typography for code samples that are taken from
 Go code in the tutorial.
 
-In cases where we are referring to a file or directory that is part 
-of the tutorial, we will write it like this: `somefile.go`.  We also will 
+In cases where we are referring to a file or directory that is part
+of the tutorial, we will write it like this: `somefile.go`.  We also will
 indicate environment variables the same way: (`PAGER`).
 
 Meta-information, asides, and commentary about the tutorial itself is
@@ -42,33 +42,75 @@ written like this:
 
 ## Prerequisites
 
-This document assumes you understand 
+This document assumes you understand
 
-* Go 
+* Go
 * the basics of the web (HTTP, HTML, CSS, a bit about the DOM)
 * the basics of git
 * a tiny bit of PostgreSQL and SQL
+* a tiny bit of curl
 
-If you know how to type `make` when necessary, that's a plus.  Some
-experience  with curl is helpful, but not required.
+Further, this tutorial assumes you are developing on a Mac using OS/X or
+a similar-enough Linux installation.
 
-Further, this tutorial assumes you are developing on a Mac using OS/X or 
-a similar-enough Linux installation. 
-
-You will need to have a version of Go installed that is at least 1.4. The
-recommended way to do this on OS/X is via brew.
+You will need to have a version of Go installed that is at least 1.6. The
+recommended way to do this on OSX is via brew.
 
 The PostgreSQL version doesn't matter too much, probably anything from 9.1
-to 9.4+ will work fine.  This tutorial was developed on PostgreSQL 9.3.
+to 9.5+ will work fine.  This tutorial was developed on PostgreSQL 9.5.
 
-Any version of curl and make should be fine.
+Any version of curl should be fine.
 
 <a name="setup"></a>
+
+# One time bootstrap
+This section does not need to be repeated once it done once.
+
+You have to have go installed on your system, version 1.6 or higher.  This tutorial
+was written with go 1.6.2.  If you installed go in a "non-standard" place
+you'll need to know what you want GOROOT to be set to.  If you don't know what
+GOROOT is, it's likely you can ignore it.
+
+You can test that your go environment is set up properly like this:
+{% highlight bash %}
+
+$ go version
+go version go1.6.2 darwin/amd64
+{% endhighlight %}
+
+Note that the last words can vary if you are on a different operating system
+or architecture from the author. `linux/amd64` is another common value for Linux
+users.
+
+We use `gb` to build this tutorial. You don't need any configuration to _use_ gb
+but you will need to insure its installed in your `PATH` somewhere.  It is
+recommended to just put it in the same directory as your go binaries:
+{% highlight bash %}
+
+$ which go
+/Users/iansmith/go16/go/bin/go
+
+{% endhighlight %}
+
+A quick way to build GB on your system, if `go` is in your path, is like this:
+
+{% highlight bash %}
+
+$ mkdir /tmp/gb/src
+$ cd /tmp/gb
+$ GOPATH=`pwd` go get github.com/constabulary/gb
+$ GOPATH=`pwd` go install github.com/constabulary/gb
+$ ls -l bin/gb
+-rwxr-xr-x  1 iansmith  staff  11237452 May  9 14:10 bin/gb
+
+{% endhighlight %}
+
+You can now copy the binary `/tmp/gb/bin/gb` to any directory in your path.
 
 # Setting Up For Seven5 Development
 
 You need to layout the source code in a particular way to make various
-Go-related tools happy. Create a directory structure for this tutorial
+Go- and Seven5-related tools happy. Create a directory structure for this tutorial
 like this:
 
 {% highlight bash %}
@@ -76,129 +118,143 @@ like this:
 $ cd
 $ mkdir tutroot
 $ cd tutroot
-$ mkdir -p external/src
+$ mkdir -p vendor/src
 $ mkdir src
 
 {% endhighlight %}
 
 This document will refer to the directory `tutroot` created first above as
-`$TUTROOT`.
+`$TUTROOT`.  If you plan to set an actual environment variable to this value
+(rather than just doing the subsitution in your head as your read) you _must_
+set `$TUTROOT` to absolute path, not a relative one--it must start with a slash.
 
-Clone the tutorial repository:
+Clone the tutorial repository and the other seven5 packages:
 
 {% highlight bash %}
 
-$ cd
-$ cd tutroot/src
-$ git clone git@github.com:seven5/tutorial.git 
+$ mkdir -p $TUTROOT/src/github.com/seven5
+$ cd $TUTROOT/src/github.com/seven5
+$ git clone git@github.com:seven5/tutorial.git
+$ git clone git@github.com:seven5/seven5.git
+$ git clone git@github.com:seven5/gb-seven5.git
 $ cd tutorial
 $ git checkout tutorial
-$ cat enable-tutorial
+$ cat enable-tutorial.tmpl
 
 {% endhighlight %}
 
 and examine the output of the last command.  That is the _enable script_
 and you should put in this file any "local" setup that you need to do
-have the this tutorial work, but also to not break other projects you 
-have on your system. 
+have the this tutorial work, but also to not break other projects you
+have on your system.
+
+You should *copy* this file to your `$TUTROOT` directory and then edit it:
+
+{% highlight bash %}
+
+$ cd $TUTROOT/src/github.com/seven5/tutorial
+$ cp enable-tutorial.tmpl ~/tutroot/enable-tutorial
+
+{% endhighlight %}
 
 Once you are satisfied with the content of the enable script, you should
 source it into your environment (not execute it):
 
 {% highlight bash %}
 
+$ cd $TUTROOT
 $ source enable-tutorial
 $ go version
-go version go1.4.1 darwin/amd64
+go version go1.6.2 darwin/amd64
 
 {% endhighlight %}
 
-The output of the last command should be version 1.4+ and appropriate
+The output of the last command should be version 1.6+ and appropriate
 for your operating system and processor architecture.
 
-<a name="godep"></a>
+<a name="gb"></a>
 
-## Godep and Seven5
+## gb and this tutorial
 
-[Godep](http://github.com/tools/godep) is an important, but tricky to use, 
-tool.  If you look in the tutorial you just checked out, you'll notice that
-there is a directory `$TUTROOT/src/tutorial/Godeps` that has a great many
-go source files in it.  The contents are all the dependencies that are needed
-to build and run the lessons in this tutorial.  These are, as intended by the
-Go creators, committed to the source code repository with the tutorial so
-you can be sure things will "just work".
+[gb](https://getgb.io) is a build tool designed to work with go. It has been
+extended for this tutorial (and your own projects, if you choose) with a plugin
+to make building Seven5-based apps easier and faster.
 
-> If you are deeply interested in Godep, you can veer off into the 
-[Godep detour](godep.html).
-
-### Bootstrapping godep itself
-
-Once and only once, you'll need to build the godep tool itself:
-
+From the previous section, you should have `gb` installed in your path.  You can
+verify this with
 {% highlight bash %}
 
-$ which godep
-$ cd $TUTROOT/src/tutorial
-$ GOPATH=$PWD/Godeps/_workspace go install github.com/tools/godep
-$ which godep
-TUTROOT/src/tutorial/Godeps/_workspace/bin/godep
-$ echo $PATH
+$ which gb
+/Users/iansmith/go16/go/bin/gb
 
 {% endhighlight %}
 
-If you look at the last command's output, you'll notice that we have carefully
-added the directory where godep was found to the PATH.  This is so we can 
-pull tools from the vendored sources. 
+If that command returns any output, your `gb` is probably ok.
 
-### Installing gopherjs and using godep
+`gb` breaks the source code into two parts.  The first or primary part is
+the code in `src` and the secondary portion is in `vendor/src`.  The secondary
+portion is code that is not what you are working on directly within this project,
+it is dependencies of the code you are working on.  These dependencies are
+"frozen" at a particular version so you can have reproducible builds on different
+systems.
 
-Continuing the previous example now that we have a copy of godep ready:
-
+For this tutorial, we have included a "manifest" or list of all the dependencies
+in the file `src/github.com/seven5/tutorial/manifest`. You should copy this file
+to the vendor area like this:
 {% highlight bash %}
 
-$ which gopherjs
-$ godep go install github.com/gopherjs/gopherjs
-$ which gopherjs
-TUTROOT/src/tutorial/Godeps/_workspace/bin/gopherjs
+$ cd $TUTROOT/vendor
+$ cp ../src/github.com/seven5/tutorial/manifest .
+$ cat manifest
 
 {% endhighlight %}
 
-The command that built our copy of [gopherjs](http://www.gopherjs.org) is
-worth understanding.  This command "wraps" the go command (arguments 2 - 4)
-with special arguments that ensure that you are using precisely two sets
-of source files:
+The last command in that sequence shows you the contents of the manifest file. It's
+simply a list of json objects, each describing a particular dependency and version
+of that dependency.  These are created/updated with `gb vendor` but for now we are
+just going to "reconstitute" all these into your vendor area.  
 
-1. Things in your `GOPATH`, set by the enable script to `TUTROOT`, so
-source code in `TUTROOT/src`.
-2. Things in the `TUTROOT/src/Godeps/_workspace` directory. 
+{% highlight bash %}
 
-You'll want to *always* use the "godep go" command to build things in this
-tutorial.  This insures you are always getting the source code that is known
-to work with the tutorial.
+$ cd $TUTROOT
+$ gb vendor restore
+Getting github.com/codegangsta/inject
+Getting github.com/coocood/mysql
+Getting github.com/coocood/qbs
+...
+
+{% endhighlight %}
+
+Now, if you look in `vendor/src/github.com` you will see many 3rd party packages
+that are used by the this tutorial.  You can be assured that if you succeeded with
+`gb vendor` you have precisely the versions you need to run the tutorial successfully.
 
 <a name="simple-server"></a>
 
 # Building The Fresno Server
 
 For this lesson and all the ones following, we'll assume that you know
-what `TUTROOT` is on your system and that you have sourced the 
+what `$TUTROOT` is on your system and that you have sourced the
 `enable-tutorial` script into your shell environment.
 
 ## Environment variables
 
 All configuration of Seven5 applications is done through environment
 variables.  This makes them [twelve factorish](http://12factor.net) and
-easy to deploy on heroku. 
+easy to deploy on heroku.
 
 > If you are deeply interested in heroku you may want to take the
 > [heroku detour](heroku.html).
 
-## Build and run the application locally
+## Build and run the fresno application locally
 
 {% highlight bash %}
 
-$ cd $TUTROOT/src/tutorial
-$ godep go install tutorial/fresno
+$ cd $TUTROOT
+$ gb build github.com/seven5/tutorial/fresno
+github.com/lib/pq/oid
+github.com/shurcooL/sanitized_anchor_name
+...
 $ fresno
 2015/03/15 18:47:39 DATABASE_URL found, connecting to postgres://iansmith@localhost:5432/fresno
 2015/03/15 18:47:39 [SERVE] (IsTest=true) waiting on :5000
@@ -224,7 +280,7 @@ You'll need to have a copy of PostgreSQL running on your local system
 for development.  On a Mac you can do this: `brew install postgres`
 and then follow its directions about how to run the database.  On a
 Linux system, use your package manager (yum, apt-get, pacman, or similar)
-to install the PostgreSQL server. 
+to install the PostgreSQL server.
 
 This document was written with PostgreSQL version 9.3, but other versions
 in the 9.x series will likely work.
@@ -274,13 +330,13 @@ migrations to be written in SQL + Go.
 
 We'll use a migration here to initialize our database with the tables we
 want to use, as well as some test data for our app to serve up.  When using
-Seven5's support for migrations, you should create a new binary which 
+Seven5's support for migrations, you should create a new binary which
 will be called "migrate" because its source is in the `migrate` directory.
 
 ## How migrations work
 
-You can see the example migrations in `migrate/main.go`. 
-These migrations are just SQL statements wrapped in Go.  The table at the 
+You can see the example migrations in `migrate/main.go`.
+These migrations are just SQL statements wrapped in Go.  The table at the
 top controls the behavior of the resulting program:
 
 {% highlight go %}
@@ -298,7 +354,7 @@ var defn = migrate.Definitions{
 
 {% endhighlight %}
 
-This table is passed through to 
+This table is passed through to
 [migrate.Main](https://gowalker.org/github.com/seven5/seven5/migrate#Main)
 which is supplied by Seven5 as an entry point for migration programs.
 
@@ -306,7 +362,7 @@ Each migration should create/modify tables or data in the database and
 can assume that, if a given migration is run, all previous migrations
 in the correct order have been run successfully.  Any migration function
 that has a problem should return an error: then the transaction will be
-rolled back and the database left unchanged. 
+rolled back and the database left unchanged.
 
 Probably the simplest migration is the migration from state 1 to state 0,
 which is the "oneDown" function in this program:
@@ -344,7 +400,7 @@ When create a table in SQL, you have to create it with the structure
 straightforward as the names are converted from camel case in Go to
 snake case for PostgreSQL.  However, you may need to experiment with
 the column types to make sure that the structures in Go mate correctly
-with them. This is less burdensome than you'd expect because the set of 
+with them. This is less burdensome than you'd expect because the set of
 types that you can express in the SQL tables is limited.
 
 The next lesson will discuss what structures in Go correspond to the
@@ -364,8 +420,8 @@ $ migrate --up
 
 {% endhighlight %}
 
-You may find it interesting to use "psql" (see [previous lesson](#psql)) 
-to look at what's in the database after you this command. 
+You may find it interesting to use "psql" (see [previous lesson](#psql))
+to look at what's in the database after you this command.
 
 The reverse migration also works:
 
@@ -385,7 +441,7 @@ current migration number is 000
 
 Again, you may find it interesting to look inside the database at the
 result of doing `migrate --down`.  There are options you can pass to the
-migrate program to run a specific number of up or down migrations with 
+migrate program to run a specific number of up or down migrations with
 the `--step` flag.
 
 If you have run the down migrations, you'll have no tables in your database
@@ -396,7 +452,7 @@ for future lessons.
 
 # Serve Up Some Data Through A REST API
 
-We've got a web server and a database that has some content in it, so 
+We've got a web server and a database that has some content in it, so
 let's try to access the `post` table to see what posts are available.
 
 ## Preparation for this lesson
@@ -435,15 +491,15 @@ Not authorized (FIND, UDID)
 
 There are two types of resources in this program, posts and users.  As you
 can see from the above, you can read the posts via the REST API but you
-don't have the authentication to read the information about Joe Smith. 
+don't have the authentication to read the information about Joe Smith.
 If you are curious, you may find it interesting to try changing the
 curl command to "curl -v" so you can see the details of the error
 messages, headers, etc.
 
 ## Resources
 
-[Resources](http://restful-api-design.readthedocs.org/en/latest/resources.html) 
-are the building blocks of 
+[Resources](http://restful-api-design.readthedocs.org/en/latest/resources.html)
+are the building blocks of
 [RESTful APIs](http://restful-api-design.readthedocs.org/en/latest/). It is
 customary to name your resource implementations in Seven5 applications
 as "FooResource" in the package `resource` if this provides the API
@@ -453,7 +509,7 @@ and `resource/post.go`, respectively.  Note that these are in different
 package typically from your main (`fresno/main.go`) so they must be
 capitalized.
 
-The objects to be exchanged over the wire between client and sever, 
+The objects to be exchanged over the wire between client and sever,
 referred to as _wire types_ in Seven5, are represented as go structures
 in the `shared` package.  The shared package is so named because both the
 client and server compile it.   The combination of the REST resources and
@@ -462,16 +518,16 @@ the structures in the shared package define the programmatic API of your
 
 Because our application is simple, we are *also*
 going to use these same structures as the data to be represented in
-the database.  This double duty is nice, because it insures that the 
+the database.  This double duty is nice, because it insures that the
 values exchanged over the wire are "in sync" with the underlying data
 model, but more complex applications typically need to separate the
 storage layer (represented by structures in the database)
-and the wire representation (that is exchanged between client and server). 
+and the wire representation (that is exchanged between client and server).
 
 ## The wire types
 
-The wire types are the "nouns" in the sense of RESTful API design. 
-These are are in `shared/post.go` and 
+The wire types are the "nouns" in the sense of RESTful API design.
+These are are in `shared/post.go` and
 `shared/user_record.go` and coded as uppercase, singular nouns ("Post").
 Because they are in a separate package, and because they must be
 serializable with "encoding/json", the fields must be uppercase also.
@@ -507,8 +563,8 @@ As we touched on in the [previous lesson](#caveat-data-type) the fields
 in the structures "UserRecord" and "Post" must match up to the columns
 in the database tables "user_record" and "post".  The primary key field
 must be called out to Qbs if the "pk" is a string, and it is good practice
-to do it in any case, even though Qbs would default to choosing the 
-int64 field Id for Post. 
+to do it in any case, even though Qbs would default to choosing the
+int64 field Id for Post.
 
 You'll notice that we do a join on the post's author to a user record.
 This is done by default by Qbs at retrieval-time and we've just accepted
@@ -534,13 +590,13 @@ with the "Post" wire type.  This is the normal way of accessing resources in
 a RESTful API.  There are some situations where the "pretty" URLs such as
 "/rest/post/2" are not desirable because there is a security consideration
 or you simply do not wish these to be "guessable".  For this situation,
-you can use a 
+you can use a
 [UDID](http://en.wikipedia.org/wiki/Universally_unique_identifier) written
 in the standard hex format, such as "df12ba96-71c7-436d-b8f6-2d157d5f8ff1".
 
 If you look in the setup of the Fresno application now (`fresno/main.go`),
-you can see where the connection is made between a wire type and a 
-resource implementation that implements methods (logically) for that 
+you can see where the connection is made between a wire type and a
+resource implementation that implements methods (logically) for that
 wire type:
 
 {% highlight go %}
@@ -575,37 +631,37 @@ Not implemented (INDEX, UDID)
 
 {% endhighlight %}
 
-"result.base" in the above code snippets is a Seven5 
+"result.base" in the above code snippets is a Seven5
 [BaseDispatcher](https://gowalker.org/github.com/seven5/seven5#BaseDispatcher)
-that will parse an incoming request for a URL and dispatch it to the 
+that will parse an incoming request for a URL and dispatch it to the
 appropriate resource or subresource.  The dispatcher has different, but
 similar looking methods, "ResourceSeparateUdid" and "ResourceSeparate" that
 indicate if you want to use UDID-based resources or standard integer ones.
 
 The first parameter given to both of these methods is the portion of the URL
 space that this resource occupies. This should be singular and lower case;
-omitting underscores is also preferred.  The second parameter is the 
+omitting underscores is also preferred.  The second parameter is the
 resource's wire type, and then there are five separate (thus the
 "separate" in "ResourceSeparate") methods that provide the implementation
 of the REST methods `index`, `find`, `post`, `put`, and `delete` respectively.
 Each of these has a unique method signature, except `put` and `delete` which
 are the same.
 
-The use of the 
+The use of the
 [QbsWrapFind](https://gowalker.org/github.com/seven5/seven5#QbsWrapFind) is
 a means of expressing that you want to use Qbs in the implementation of the
-method, and would like a properly initialized Qbs instance to be part of 
-your method signature. 
+method, and would like a properly initialized Qbs instance to be part of
+your method signature.
 
-The use of "QbsWrapFind" or other "QbsWrap\*" methods also implies the 
+The use of "QbsWrapFind" or other "QbsWrap\*" methods also implies the
 default behavior for transaction rollbacks, should the implementation
 panic().  In general, if you use the QbsWrap* wrapper functions you should
 be able to ignore transactions.
 
 ## Return values and wire types
 
-If you look in `resource/user_record.go` you'll see the 
-method "FindQbs", the implementation of the find verb.  This method's 
+If you look in `resource/user_record.go` you'll see the
+method "FindQbs", the implementation of the find verb.  This method's
 signature is interesting:
 
 {% highlight go %}
@@ -620,7 +676,7 @@ The first parameter is the _provided_ udid sent from the client. The second
 parameter is a collection of "other parameters" that may or may not have been
 provided by the client (via query parameters, her session, etc) and the
 last parameter is a Qbs instance for use in looking up the data in the
-database. 
+database.
 
 The return values are more murky.  Sadly, we cannot get strong typing
 on the first parameter because it is checked at run-time.  This must match
@@ -629,19 +685,19 @@ the association).  The latter argument is an error.  If that error is
 of Seven5's [Error](https://gowalker.org/github.com/seven5/seven5#Error)
 type, you can provide the HTTP status code an error message.  If it is a
 different type of error, the client will receive an "internal error" (HTTP
-code 500) result. 
+code 500) result.
 
 It is perhaps unsurprising that about half of the implementation of
 the FindQbs method in both UserRecord and Post is error checking and
 returning. It "seems" that it "ought to be" just a simple database lookup
-for a Find on a simple resource,  but the error checking is required for a 
+for a Find on a simple resource,  but the error checking is required for a
 real application.
 
 <a name="static-site"></a>
 
 # A static site
 
-Let's look at sending fixed, static files between the client and server. 
+Let's look at sending fixed, static files between the client and server.
 
 ## Preparation for this lesson
 As before, you'll need to have godep and gopherjs installed,
@@ -666,7 +722,7 @@ install the (enormous) package "build-essential".
 
 ## Static files and Don't Repeat Yourself
 
-Based on the doctrine of 
+Based on the doctrine of
 [DRY](http://en.wikipedia.org/wiki/Don't_repeat_yourself), Seven5 offers
 some tooling to help you generate web pages.  "Vat?!? Generatung
 veb kontent [_ist verboten_](/index.html#modern-web-pages)!?!"   As was
@@ -676,25 +732,25 @@ fall foul of the "no generating content" rule.
 
 An easy way to insure that content does not break the prescription
 against server-generated HTML is to ask if the server can correctly
-generate a [304](http://httpstatusdogs.com/304-not-modified) 
+generate a [304](http://httpstatusdogs.com/304-not-modified)
 [Not Modified](http://httpstatus.es/304) response to a web request for
 that HTML content.  The Go default "serve file"
 functions are careful to generate 304 for files that are just sitting in
 a directory... so, relax, everything is fine.
 
-## pagegen 
+## pagegen
 
-HTML files, and to some extent CSS files, are notorious for having 
+HTML files, and to some extent CSS files, are notorious for having
 repetition in them. Repetition makes things hard to maintain because you
 can't make any change "in just one place".  "pagegen" is a tool that
 lets you keep everything [OAOO](http://c2.com/xp/OnceAndOnlyOnce.html).
 
-The program "pagegen" is in the directory `pagegen` which sets some 
+The program "pagegen" is in the directory `pagegen` which sets some
 [options](https://gowalker.org/github.com/seven5/seven5#PagegenOpts)
-and then calls the 
+and then calls the
 [main](https://gowalker.org/github.com/seven5/seven5#PagegenOpts_Main)
 provided by Seven5.  This pattern of providing an "entry point" that
-you can wrap with your own "main()" is used both with pagegen and 
+you can wrap with your own "main()" is used both with pagegen and
 migrations in Seven5.  In both cases it is arranged this way because
 Seven5 has "most" of the logic but allows you to provide your own
 "semantics".
@@ -722,11 +778,11 @@ var funcs = map[string]interface{}{
 
 {% endhighlight %}
 
-These two 
-[functions](http://golang.org/pkg/text/template/#example_Template_func) 
-are added to the 
+These two
+[functions](http://golang.org/pkg/text/template/#example_Template_func)
+are added to the
 [template processing](http://golang.org/pkg/text/template/) that is done
-by pagegen. 
+by pagegen.
 
 ### Building pagegen
 
@@ -743,7 +799,7 @@ further.
 
 The directory `pages` has all the static file content. You can go into
 the `pages` directory and type `make html` to build the content.  (You can
-do `make clean` before `make html` if you want to force make to do a full 
+do `make clean` before `make html` if you want to force make to do a full
 rebuild.):
 
 {% highlight bash %}
@@ -762,10 +818,10 @@ make: Nothing to be done for `html'.
 > paths that require, for example, `../static` to resolve to `TUTROOT/static`.
 
 We are going to start by examining one of the pagegen commands that were run
-by make, generating `static/en/web/post/index.html`, above. 
+by make, generating `static/en/web/post/index.html`, above.
 
-The "base" HTML file is `pages/template/post/index.html`. 
-The JSON data bundle for that page is `pages/template/post/index.json`. 
+The "base" HTML file is `pages/template/post/index.html`.
+The JSON data bundle for that page is `pages/template/post/index.json`.
 
 The `pages/template/post/index.html` file is:
 
@@ -791,9 +847,9 @@ The `pages/template/post/index.html` file is:
     </div>
 
      {{template "MISC_FOOTER" .}}
-    
+
     </div> <!--container -->
-    
+
     {{template "MISC_JSLOAD" .}}
 </body>
 </html>
@@ -813,17 +869,17 @@ The `pages/template/index.json` file is:
 {% endhighlight %}
 
 The "template" for our `index.html` page is "merged" with this JSON blob
-to create the final HTML output. If you are familiar with 
+to create the final HTML output. If you are familiar with
 [go templates](http://golang.org/pkg/text/template/), these are just Go
 templates with the data provided by the JSON file.
 
-The make command above referenced the support directory 
+The make command above referenced the support directory
 `pages/template/support`.  _All_ the templates found in this directory
 (files ending in ".tmpl") are available to the page being generated.  For
 example, you can see the definition of the referenced
 template BOOTSTRAP_HEAD_SECTION in `pages/template/support/bootstrap.tmpl`
-and the templates MISC_FOOTER and MISC_JSLOAD in 
-`pages/template/support/misc.tmpl`. 
+and the templates MISC_FOOTER and MISC_JSLOAD in
+`pages/template/support/misc.tmpl`.
 
 It should be noted that the calls to these "partial templates" are passed
 the argument "." (dot).  This is set to the root object of the JSON content
@@ -831,7 +887,7 @@ the argument "." (dot).  This is set to the root object of the JSON content
 when the bootstrap template is reached, it will have access to the title
 and CSS page associated with this content.
 
-If we look at the definition of MISC_FOOTER in 
+If we look at the definition of MISC_FOOTER in
 `pages/template/support/misc.tmpl`:
 
 {% highlight html %}
@@ -846,7 +902,7 @@ If we look at the definition of MISC_FOOTER in
 
 {% endhighlight %}
 
-This is the "year" function defined in `pagegen/main.go` and discussed 
+This is the "year" function defined in `pagegen/main.go` and discussed
 at the beginning of this section.  This example shows you how
 you can invoke arbitrary go code from within a template during pagegen
 processing.
@@ -858,14 +914,14 @@ engine the ability to avoid repeating yourself in the HTML is paramount.
 
 The output of pagegen, notably `static/en/web/post/index.html` in this lesson,
 is placed in the `static` subdirectory.  That directory _must_ be checked
-into git as it is the content your web server will respond with when 
+into git as it is the content your web server will respond with when
 queried for "/".  In other words, `static/en/web/post/index.html` will be
 visible as "/en/web/post/index.html" when the server is running.
 
 There are files in `static/fixed` that correspond to assets, like images
-or CSS files, that don't change depending on the language of the user's 
-browser or browsing device. Although we only support one language ("en") 
-and one device ("web") right now, the content that might be dependent on 
+or CSS files, that don't change depending on the language of the user's
+browser or browsing device. Although we only support one language ("en")
+and one device ("web") right now, the content that might be dependent on
 these variables is separated into subdirectories.
 
 ## Run and test the static files
@@ -875,13 +931,13 @@ pagegen applications anytime, so we won't call it out anymore.
 
 From now on you must assume that you should run `fresno` from the primary
 tutorial directory (`TUTROOT/src/tutorial` or the parent of `static`) because
-this is how your application will be run on production. 
+this is how your application will be run on production.
 
 You can view the `static/en/web/post/index.html`
 [index page](http://localhost:5000/en/web/post/index.html) in your web browser
 on the local machine, or on heroku if you are pushing code there. The URLs "/"
-and "/posts" are  equivalent; they correspond to the same content in 
-`static/en/web/post/index.html` and we will explain these URLs in more 
+and "/posts" are  equivalent; they correspond to the same content in
+`static/en/web/post/index.html` and we will explain these URLs in more
 detail later.
 
 > If you are getting a 404 error in the local case,
@@ -891,20 +947,20 @@ detail later.
 
 # A Signup Form
 
-Let's now turn our attention to the 
+Let's now turn our attention to the
 [signup form](http://localhost:5000/en/web/signup.html) which can be found
 in `static/en/web/signup.html`.
 
-This lesson uses the "_fixed form_ strategy" for dealing with the 
-DOM content. In this strategy, all the HTML/DOM ids ("div#foo") are known 
-in advance,  thus it is easy to "hook up" the interactive parts of 
-the application to the form elements. In more complex interfaces, 
-one cannot know all the HTML ids in advance, because these are 
+This lesson uses the "_fixed form_ strategy" for dealing with the
+DOM content. In this strategy, all the HTML/DOM ids ("div#foo") are known
+in advance,  thus it is easy to "hook up" the interactive parts of
+the application to the form elements. In more complex interfaces,
+one cannot know all the HTML ids in advance, because these are
 calculated at run-time and a different strategy is necessary.
 
 ## Preparation for this lesson
 
-Make sure Fresno is running and that you see the signup form 
+Make sure Fresno is running and that you see the signup form
 when you go to /en/web/signup.html.
 
 In your terminal make sure all your client-side (browser) code is built
@@ -923,21 +979,21 @@ $ make
 The form you should see will look like the image to the right, minus the
 pink arrows and text which are for this tutorial.
 
-<img src="/assets/img/signup.png" hspace="30" vspace="30" 
+<img src="/assets/img/signup.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:80%;height:80%; float:right;">
 
 If you don't have the error console open, as shown at the bottom of the
-screen cap, you should open it now.  You'll need it.  In Safari, you 
+screen cap, you should open it now.  You'll need it.  In Safari, you
 have to access the developer's menu and select "Show Error Console".  In
 Chrome you should select "View" then "Developer" then "Javascript Console".
 
 Typing into the form should give you some feedback in the right-hand
 portion of the screen.  Once you have filled in all the areas of the
-form and there are no errors, the "Sign Up" button will become 
+form and there are no errors, the "Sign Up" button will become
 enabled.  For now, don't hit the sign up button and just stay on this
 page.
 
-## HTML code 
+## HTML code
 
 In the `pages` directory you'll notice the
 `pages/template/signup.html` and corresponding `pages/template/signup.json`.
@@ -966,7 +1022,7 @@ the HTML page is:
         {{template "FORM_5WIDE_TEXT" .email}}
         {{template "FORM_5WIDE_TEXT" .password}}
         {{template "FORM_5WIDE_TEXT" .confirm_password}}
-      
+
           <div class="form-group">
             <div class="col-sm-offset-2 col-sm-6">
                   <button id="signup" class="disabled btn btn-primary">Sign up</button>
@@ -975,7 +1031,7 @@ the HTML page is:
     </form>
 
      {{template "MISC_FOOTER" .}}
-    
+
   </div> <!--container -->
   <div id="secondary" class="container hide">
     <div class="row">
@@ -1063,7 +1119,7 @@ file).   This is ok because it's quite fast, as gopherjs does the same
 type of rebuild-only-if-necessary that the standard Go tool does.  The
 make target is designed to give "fast feedback" when doing front-end
 development.  Just _leave Fresno running_ and then in another shell
-switch to the `pages` directory and use "make" to "build everything 
+switch to the `pages` directory and use "make" to "build everything
 again".  Then you can just refresh your browser and you'll see the changes.
 
 ### Entry point
@@ -1071,8 +1127,8 @@ again".  Then you can just refresh your browser and you'll see the changes.
 The code for the client-side portion of this form is in `client/signup.go`.
 
 A single HTML page, and its associated state, is represented as an instance of
-Seven5's 
-[Application](https://gowalker.org/github.com/seven5/seven5/client#Application) 
+Seven5's
+[Application](https://gowalker.org/github.com/seven5/seven5/client#Application)
 interface.  There is only one method on Application, the Start() method.  This
 method is critical because Seven5 will do work to insure that this method will
 not be called before the DOM is fully ready.
@@ -1118,25 +1174,25 @@ type signupPage struct {
 
 {% endhighlight %}
 
-An attribute in Seven5 is just a value.  We have to use this slightly 
+An attribute in Seven5 is just a value.  We have to use this slightly
 awkward notation, "s5.StringAttribute", to represent a string as a value,
 because attributes have a property that normal Go values don't have:
-they can be used as the source or destination for _constraints_. 
+they can be used as the source or destination for _constraints_.
 
 A constraint is just a function.  Such functions must take in attributes
 as their inputs and produce a value.  It's called a constraint because
 Seven5 has machinery that allows it to guarantee that your constraints are
-always "met". 
+always "met".
 
 > For the curious, the algorithm used to insure that constraint evaluation
 > is both correct and close to minimal is
 > [eval_vite](ftp://ftp.cc.gatech.edu/pub/gvu/tr/1993/93-15.pdf) from 93.
 
 So, how does this work in our example form?  First, the first five named
-attributes in the signup page structure have their values constrained 
+attributes in the signup page structure have their values constrained
 to be equal to the values in the type-in fields of the form.  The "magic" of
-Seven5 is allowing constraints to be computed from parts of the DOM; all the 
-other constraint processing algorithms/ideas have been 
+Seven5 is allowing constraints to be computed from parts of the DOM; all the
+other constraint processing algorithms/ideas have been
 around since the 1990s.  Thus, at any point in the code of `client/signup.go`
 the value read from signupPage.first.Get() will be the value that is
 currently in the corresponding text box on the screen.
@@ -1144,16 +1200,16 @@ currently in the corresponding text box on the screen.
 We can go the other direction.  The three fields of signupPage that end
 in "Feedback" are used to compute the values of the feedback areas to the
 right of the text entry areas.  Again, Seven5 allows constraints to
-go "into" the DOM as well as come from it.  So, a call like 
-signupPage.firstFeedback.Set("foobar") will display "foobar" to the 
-right of the first name text entry box and, naturally, 
+go "into" the DOM as well as come from it.  So, a call like
+signupPage.firstFeedback.Set("foobar") will display "foobar" to the
+right of the first name text entry box and, naturally,
 signupPage.firstFeedback.Set("") will remove what was there before.
 
 To recap the way these eight fields are used in the application: Equality
 constraints have been placed on the DOM elements for the text entry fields
 ("input" tags) and on the output areas ("label" tags) such that they remain
 equal to (have the same string content as) the corresponding fields in
-the signupPage structure. 
+the signupPage structure.
 
 Our eight constraints are guaranteed by Seven5, no action is necessary
 to maintain them once the constraints are established.  You can see the
@@ -1188,12 +1244,12 @@ is the value that was produced by  an s5.StringAttribute, in this case
 signupPage.Email.  The value returned by this function, also s5.StringEqualer,
 will end up being assigned to signupPage.emailFeedback.
 
-A very similar function is used to provide the name feedback 
+A very similar function is used to provide the name feedback
 (nameFeedback() in the source) and the password comparison
 feedback (pwdFeedback()).
 
 The constraint function below is a function of five parameters, all of
-them coming from the five "input" attributes that are described above. It 
+them coming from the five "input" attributes that are described above. It
 produces a boolean in the form of an s5.BoolEqualer:
 
 {% highlight go %}
@@ -1230,11 +1286,11 @@ func formIsBad(raw []s5.Equaler) s5.Equaler {
 
 {% endhighlight  %}
 
-This is the function that looks at the form and decides if the 
+This is the function that looks at the form and decides if the
 Sign Up button should be enabled.  This function's boolean result is
-connected to the DOM via the CSS class "disabled".  In other words, 
+connected to the DOM via the CSS class "disabled".  In other words,
 the guarantee here is that if the value of this function is true
-(really an s5.BoolEqualer with a B field of true), then the class 
+(really an s5.BoolEqualer with a B field of true), then the class
 "disabled" will be present on the button tag.  If the value of this
 function is false, then the tag is guaranteed to _not_ be there.  This
 means that we can now enable or disable (really "not disable" and "disable")
@@ -1243,7 +1299,7 @@ elements of the UI based on constraints.
 ## The Big Win
 
 > If you don't have experience with building web UIs, this may seem
-> like a "small win". 
+> like a "small win".
 
 You should note that the code of `client/signupPage.go` has *no event
 handlers*.  Thus, there are no "callbacks" to handle events, and the
@@ -1255,15 +1311,15 @@ attempting to deal with all the possible semantic cases that come from
 a user input.  For example: Do we need to re-compute the value of the
 enabled/disabled state of the Sign Up button on any keypress in the
 email field?  (Answer: yes.)  Do we need to recompute the value of
-the password feedback field on any keypress in the email field? 
-(Answer: no.)  More fun: What if the user adds a space to the end of 
-the last name field? Do we need to recompute the state of the 
-Sign Up button?  When you use constraints, you can simply ignore this 
+the password feedback field on any keypress in the email field?
+(Answer: no.)  More fun: What if the user adds a space to the end of
+the last name field? Do we need to recompute the state of the
+Sign Up button?  When you use constraints, you can simply ignore this
 type of questions.
 
-Constraints are not a free lunch, they require work from you 
-in structuring your application.  They require you to think 
-carefully about the inputs and outputs of your user interface, and 
+Constraints are not a free lunch, they require work from you
+in structuring your application.  They require you to think
+carefully about the inputs and outputs of your user interface, and
 require clear articulation of the processing to be done.
 This articulation must be done so that the processing of inputs to
 outputs can be encoded in constraint functions.  Our experience has
@@ -1272,16 +1328,16 @@ easily outweighed by the benefits gained in cleaner UI code.
 
 ## GOPATH and jsmaps
 
-Gopherjs generates 
+Gopherjs generates
 [Javascript source maps](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k)
 that allows you to debug in the browser at the Go level.
 
 If you look at the developer console (see figure above) at the right of
 the "hello, world" you'll see "signup.go:57" in italics.  (The line
 number may be slightly different in your version.)  You can click
-on it and go to the line in the source code.  Seven5 knows how to 
+on it and go to the line in the source code.  Seven5 knows how to
 interpret the request to show you the source code based on your GOPATH
-(set in the enable script).  You may find it interesting to look at the 
+(set in the enable script).  You may find it interesting to look at the
 log messages generated by Fresno when you click on a link like this.
 
 If you look at the source code, you'll notice a couple of differences
@@ -1295,18 +1351,18 @@ func (s signupPage) Start() {
 
 {% endhighlight %}
 
-The function used to print to the console is the Go builtin "print()", 
+The function used to print to the console is the Go builtin "print()",
 not any of the methods from the log or fmt package.  print() is fairly
 smart and knows how to print complex objects into the Javascript
 console, so pretty much _anything_ can be printed, although you'll be
-looking at the Javascript representation rather than the Go one. 
+looking at the Javascript representation rather than the Go one.
 
 More interesting is to introduce a panic("foo") immediately after that print
 and then rebuild ("make" in the `pages` dir) the client-side code.  If you
 have done this, you'll see something like this in your browser if you
 reload the page:
 
-<img src="/assets/img/panic_1.png" hspace="30" vspace="30" 
+<img src="/assets/img/panic_1.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%; float:right;">
 
 You should click on the little triangle to open up the stack trace.  This
@@ -1316,26 +1372,26 @@ since the compiler is generating numerous functions to support your Go code.
 Although you can look at the Javascript code, don't bother, it was generated
 by a machine.  The Go source code (italics at the right) is more interesting:
 
-<img src="/assets/img/panic_2.png" hspace="30" vspace="30" 
+<img src="/assets/img/panic_2.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%; float:right;">
 
 Once you click through a link, you'll need to "go back" from the source code
 to the stack.  This is often confusing for people new to debugging inside the
 browser, so I've highlighted the little "go back" button that affects the
-debugging/error console.  If you click on the "app.go" link in that stack 
+debugging/error console.  If you click on the "app.go" link in that stack
 trace, you'll be dumped into the Seven5 source code.
 
 ### Source debugging
 
-<img src="/assets/img/panic_3.png" hspace="30" vspace="30" 
+<img src="/assets/img/panic_3.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%;">
 
 The next screenshot shows the source code if you clicked through the link
 in the previous screenshot labelled "signup.go:57".  You can click in the
-margin to the left of a line to put in a breakpoint.  Insert this 
+margin to the left of a line to put in a breakpoint.  Insert this
 breakpoint as shown and then reload the page.
 
-<img src="/assets/img/panic_4.png" hspace="30" vspace="30" 
+<img src="/assets/img/panic_4.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%;float:right;">
 
 You will see a display somewhat like this one. You are now in the land of
@@ -1361,7 +1417,7 @@ You'll need to have Fresno running for this lesson.
 ## Client side, sending the data
 
 In Start() of the application code, in `client/signup.go`, there is an event
-handling function associated with the user clicking the big blue button: 
+handling function associated with the user clicking the big blue button:
 
 {% highlight go %}
 
@@ -1388,8 +1444,8 @@ func (s signupPage) Start() {
 
 It should be fairly clear that this is responding to a click
 event and copying data out of the form into a instance of the
-wire type shared.UserRecord.  (Attributes and the wire type structures 
-were discussed in previous lessons.)  This is then sent to the server with 
+wire type shared.UserRecord.  (Attributes and the wire type structures
+were discussed in previous lessons.)  This is then sent to the server with
 AjaxPost(). The details of the Ajax call will be covered in a future
 lesson.
 
@@ -1414,8 +1470,8 @@ in this case, Find) method and the wire type shared.UserRecord:
 
 {% endhighlight  %}
 
-In the resource implementation, `resource/user_record.go`, we have implemented 
-the method PostQbs to handle the information sent from the client. 
+In the resource implementation, `resource/user_record.go`, we have implemented
+the method PostQbs to handle the information sent from the client.
 The server needs to take care to not simply trust the data in "proposed" (did you
 spot the "hee hee" moment in the client side?):
 
@@ -1470,7 +1526,7 @@ func (self *UserRecordResource) PostQbs(i interface{}, pb s5.PBundle, q *qbs.Qbs
 
 You should be able to build the client side with "make" in `pages` and the
 server with `godep go install tutorial/fresno` in the main tutorial directory.
-You can visit the new sign up page 
+You can visit the new sign up page
 [here](http://localhost:5000/en/web/signup.html) if Fresno is running. You
 can create users by using the signup form.  You can create many users you log
 out after creating each one.  You may find it interesting to return to the
@@ -1481,14 +1537,14 @@ since the navigation bar will try to steer you away from this course of action.
 
 # Password Authentication: Allow Methods And Sessions
 
-For the avoidance of doubt: _authentication is nasty_.  The reader 
-will likely have noticed that the Seven5 programming model to this 
-point was very clearly differentiated: REST services that communicate 
+For the avoidance of doubt: _authentication is nasty_.  The reader
+will likely have noticed that the Seven5 programming model to this
+point was very clearly differentiated: REST services that communicate
 via APIs mounted at  /rest/resourcename or static files, mounted at /.
 
-Static files were served up in the usual way, with HTTP status 
+Static files were served up in the usual way, with HTTP status
 code 304 allowing convenient caching, and requests to the APIs
-in /rest could not be cached as they were "hot". 
+in /rest could not be cached as they were "hot".
 
 Authentication creates a problem.  We are going to be forced to introduce
 two new "endpoints" in our URL space that are neither fish nor fowl:
@@ -1496,7 +1552,7 @@ two new "endpoints" in our URL space that are neither fish nor fowl:
 * /auth: the place to send data that concerns an attempt to log in or out
 * /me: the place to request information about the currently logged in user
 
-Neither of these endpoints can be cached, yet they are not RESTful. 
+Neither of these endpoints can be cached, yet they are not RESTful.
 
 <a name="setup-auth"></a>
 
@@ -1518,15 +1574,15 @@ Not authorized (FIND, UDID)
 Your attempt to retrieve that record has been refused because the
 implementation of the user record resources uses _allow methods_ to
 control access to this URL.  Since your attempt to hit the server
-with curl is not authenticated, much less authenticated as Mary, 
-you cannot read this URL. 
+with curl is not authenticated, much less authenticated as Mary,
+you cannot read this URL.
 
 Allow methods permit coarse-grain policies to be implemented "around"
 a particular REST resource.  Allow methods run *before* any resource
-code is executed, and they indicate that access is or is 
-not allowed via their return value. If the return value is false, 
-the resource method is not called at all and an error is returned to 
-the client.  The allow methods for a resource that uses UDIDs for 
+code is executed, and they indicate that access is or is
+not allowed via their return value. If the return value is false,
+the resource method is not called at all and an error is returned to
+the client.  The allow methods for a resource that uses UDIDs for
 resource identity are represented as interfaces in Seven5:
 
 {% highlight go %}
@@ -1548,20 +1604,20 @@ type AllowerUdid interface {
 
 {% endhighlight %}
 
-By implementing any of these interfaces as part of your resource 
+By implementing any of these interfaces as part of your resource
 implementation, you can get the option to "accept or reject" method
 calls.  You are also provided with the parameters that will be sent
 to the resource method if it is invoked, so you can make decisions
-based on parameters, sessions, etc. 
+based on parameters, sessions, etc.
 
 Each of these methods are provided with a Seven5 Pbundle (pronounced
 pee-bundell) or _parameter bundle_.  This contains numerous values
-that have been sent by the client side and will be detailed later. 
-The last method in our code above is provided with the method name 
+that have been sent by the client side and will be detailed later.
+The last method in our code above is provided with the method name
 (2nd parameter), in uppercase letters, to allow the receiver to
-discriminate based on the method invoked. 
+discriminate based on the method invoked.
 
-In our implementation of `resource/user_record.go` we now have 
+In our implementation of `resource/user_record.go` we now have
 an implementation of Allow that rejects our effort to GET the resource.
 
 {% highlight go %}
@@ -1579,7 +1635,7 @@ func (self *UserRecordResource) Allow(udid string, method string, pb s5.PBundle)
 
 This implementation uses the existence of a session in the parameter
 bundle as a way to see if the user is logged in and, if the user
-is logged in, checks that the attempt to "FIND", "PUT" or "DELETE" a record 
+is logged in, checks that the attempt to "FIND", "PUT" or "DELETE" a record
 has the same Udid as the logged in user.  In other words, only Mary can
 retrieve info about Mary.
 
@@ -1587,11 +1643,11 @@ retrieve info about Mary.
 
 Seven5 provides some common utilities for manipulating a _session_
 inside the server of an application.  The utilities make the assumption
-that a user that is "logged in" to the application will have one 
+that a user that is "logged in" to the application will have one
 and only one session, even if they have multiple browser windows connected
 to Fresno.  The semantics of "logged in" are defined by
 the application itself, but typically involve some type of
-authentication. 
+authentication.
 
 For this lesson, we are assuming that the user types in
 an email address and a password, sends them to the server, and the
@@ -1601,32 +1657,32 @@ as the _user data_ for the session is set to a UserRecord struct,
 from `shared/user_record.go`.  If the passwords don't match, an error
 is returned.
 
-The user data associated with a session can be any Go value (it's an 
-interface{}) but typically what needs to be "hung" on the session 
+The user data associated with a session can be any Go value (it's an
+interface{}) but typically what needs to be "hung" on the session
 is information about the current user.  This is what Fresno does.
 
 ### Session keys
 
 Seven5 uses `SERVER_SESSION_KEY` to insure that users (client programs)
-don't tamper with their sessions.  Only the server knows the 
-`SERVER_SESSION_KEY`. Check this lesson's enable script 
-(`enable-fresno`) for the sample value.  The user's browser will 
-get a cookie named 'seven5-fresno-session' that will have an 
-encrypted value in it.  For example, the cookie value might be 
-something like: 
+don't tamper with their sessions.  Only the server knows the
+`SERVER_SESSION_KEY`. Check this lesson's enable script
+(`enable-fresno`) for the sample value.  The user's browser will
+get a cookie named 'seven5-fresno-session' that will have an
+encrypted value in it.  For example, the cookie value might be
+something like:
 
 <pre>
 65a16749d4a090d2abcfee571bfc3c7e3264a0a88e2ddd839f25a1a94aadf2c31d80fb62b31ae6657a0f7a2449412a3dd2598a132ae7785feca037ec68764058a7f8
 </pre>
 
-If the client _could_ tamper with this value successfully, 
-it would allow them to masquerade as any user!  The primary benefit 
-of using this type of encrypted session data is to allow the server 
-to store a _persistent_ value in the client's browser--in our case 
+If the client _could_ tamper with this value successfully,
+it would allow them to masquerade as any user!  The primary benefit
+of using this type of encrypted session data is to allow the server
+to store a _persistent_ value in the client's browser--in our case
 an email address plus an expiration time--that survives across server
-restarts.  Although Seven5 maintains the sessions in memory, 
-we can recover sessions that were created prior to this server's 
-process execution if we find a valid cookie.  Valid here means 
+restarts.  Although Seven5 maintains the sessions in memory,
+we can recover sessions that were created prior to this server's
+process execution if we find a valid cookie.  Valid here means
 "decrypts to something sensible" using `SERVER_SESSION_KEY`.
 
 You should pick a key if you plan to use any system like this in practice.
@@ -1642,20 +1698,20 @@ $ Godeps/_workspace/bin/key2hex thisisanexample0
 {% endhighlight %}
 
 Obviously, you should pick your own password rather than
-"thisisanexample0", we recommend using 
+"thisisanexample0", we recommend using
 [a strong password generator](https://strongpasswordgenerator.com)
 to generate a 16 character password.  Then you can use this in your
 enable script to set the secret for your server.
 
 If you have to change the key for some reason, this is not catastrophic.
 All previously created sessions will become  invalid (and the
-corresponding users immediately logged out) since their cookie will no 
-longer decrypt to a "sensible" value. 
+corresponding users immediately logged out) since their cookie will no
+longer decrypt to a "sensible" value.
 
 > Is this strategy vulnerable to known plaintext attacks? The plaintext
 can be easily determined from the Seven5 source code, so the scheme appears
 to have its security resting entirely on the inability of the attacker
-to generate a "legitimate" cookie value without knowing the secret. 
+to generate a "legitimate" cookie value without knowing the secret.
 
 <a name="pwd-client"></a>
 
@@ -1668,15 +1724,15 @@ You'll need to have Fresno running for this lesson.
 ## New URLs
 
 Fresno has two authentication URLs that were describe
-[previously](#pwd-allow) as neither fish nor fowl. The first of these, 
+[previously](#pwd-allow) as neither fish nor fowl. The first of these,
 "/auth", is the authentication point for submitting a username and
-password.  It can also be used for other tasks, such as logging 
-*out*, that will be explained in later lessons. 
+password.  It can also be used for other tasks, such as logging
+*out*, that will be explained in later lessons.
 
 The other, perhaps more suprising URL, is "/me" that allows a client to
-ask the server "who am I?" This uses the cookie stored in the user's 
+ask the server "who am I?" This uses the cookie stored in the user's
 browser explained [previously](#pwd-allow) to determine who, if anyone,
-the current browser is logged in as.  You can see try this with curl, 
+the current browser is logged in as.  You can see try this with curl,
 of course:
 
 {% highlight bash %}
@@ -1688,14 +1744,14 @@ no cookie
 
 If you change the command above to be "curl -v" you can see that the
 server is actually returning a 401 error code. This is the cue to
-Fresno's user interface to display a page appropriate for a user 
-that is not logged in. 
+Fresno's user interface to display a page appropriate for a user
+that is not logged in.
 
 Navigate to the [Fresno home page](http://localhost:5000/)
 and you will see this:
 
-<img src="/assets/img/login1.png" hspace="30" vspace="30" 
-alt="the signup page" 
+<img src="/assets/img/login1.png" hspace="30" vspace="30"
+alt="the signup page"
 style="border:1px solid black; width:80%;height:80%"/>
 
 ## Client-side checking of /me
@@ -1704,10 +1760,10 @@ The implementation of the client-side code for the top right corner of
 the page is in `client/uicommon/standard_page.go`.  The function
 GetLoggedInUser is responsible for checking the value returned from
 /me to see what to display on the upper right corner of the page.  This
-code is shared among several pages so it has been placed in the 
+code is shared among several pages so it has been placed in the
 `client/uicommon` package to do avoid duplication.
 
-There are three common idioms for client-side Seven5 code in the 
+There are three common idioms for client-side Seven5 code in the
 GetLoggedInUser() method, so we'll reproduce all of it here:
 
 {% highlight go %}
@@ -1741,8 +1797,8 @@ func (self *StandardPage) GetLoggedInUser() {
 
 ### The Ajax idiom
 
-We are sending the server a request for a particular URL, the return value of 
-shared.URLGen.Me() which works out to "/me" (see below for more on URLGen). 
+We are sending the server a request for a particular URL, the return value of
+shared.URLGen.Me() which works out to "/me" (see below for more on URLGen).
 
 This is a common pattern in Seven5 client-side programs:
 
@@ -1761,7 +1817,7 @@ This is a common pattern in Seven5 client-side programs:
 
 {% endhighlight %}
 
-A few things to note about this idiom. 
+A few things to note about this idiom.
 
 * First, the use of select would  block, so it must be run inside a
   goroutine.  This is in keeping with the fact that it may take an
@@ -1783,20 +1839,20 @@ A few things to note about this idiom.
   safely assume that the value on the channel is the same as the wire
   type provided in the original call to the Ajax function.
 
-> We cannot achieve strong typing with the content channel because Seven5 
+> We cannot achieve strong typing with the content channel because Seven5
 > can't know the types in your program.  Further, we use JSON as the wire
 > format and this breaks some amount of type safety.  We encourage folks that
 > are interested in this issue to experiment with using protobufs, gobs, or
-> similar as the transport.  This would allow a more "tight rpc style" of 
+> similar as the transport.  This would allow a more "tight rpc style" of
 > calls from client to server rather than the "loosey-goosey" style of JSON.
-> See 
+> See
 > [this example](https://github.com/shurcooL/play/commit/e7e89367c071462ed0d150663bba54a78c06deed)
 > how to use jsonrpc.
 
 ## The Urlgen idiom
 
 The file `shared/urlgen.go` declares a single variable URLGen of type
-UrlGenerator. 
+UrlGenerator.
 
 {% highlight go %}
 
@@ -1818,11 +1874,11 @@ type URLGenerator interface {
 
 {% endhighlight %}
 
-Much, acutely painful, experience has shown that it is error-prone 
-to have hard-coded string constants that correspond to the URLs in 
-your application.  It is downright suicidal to have "fmt.Sprintfs()" 
+Much, acutely painful, experience has shown that it is error-prone
+to have hard-coded string constants that correspond to the URLs in
+your application.  It is downright suicidal to have "fmt.Sprintfs()"
 that compute complex URLs in your application.  Use of such strings
-makes it hard to change the URL space of your application during 
+makes it hard to change the URL space of your application during
 development.
 
 Besides the obvious benefit of once and only once, typically the client
@@ -1834,8 +1890,8 @@ server both generating these URLs via strings or fmt.Sprintf().
 
 Since a Seven5 application is Go on both the client and server, you
 can link the _same code_ into both sides--and breath a sigh of relief
-that things will stay in sync.  As an aside, if you prefer to 
-version your URLs for backward compatibility, this can be 
+that things will stay in sync.  As an aside, if you prefer to
+version your URLs for backward compatibility, this can be
 accomplished with the use of the URLGenerator idiom.
 
 ## The parent idiom
@@ -1843,7 +1899,7 @@ accomplished with the use of the URLGenerator idiom.
 It is common in web pages to have some part of the display that cannot
 be known until data is pulled from the server at runtime.  In the
 example GetLoggedInUser method above, the dynamic portion of the UI is the
-value (or link) to be displayed in the upper right of the index page. 
+value (or link) to be displayed in the upper right of the index page.
 There are four method calls in GetLoggedInUser that affect the display:
 AddCurrentUserNav, AddLogOutNav, AddSignupNav and AddLogInNav.  For space
 reasons we'll just show one of these:
@@ -1882,7 +1938,7 @@ child list of the self.navRight element.  The parent's definition is:
 {% endhighlight %}
 
 The call to NewHtmlId searches the DOM for *exactly one* tag of type
-"ul" with Id of "nav-right".  That tag is in the HTML code 
+"ul" with Id of "nav-right".  That tag is in the HTML code
 (`pages/template/support/page.tmpl`) that defines the template
 PAGE_NAV_BAR that is used for several of the pages:
 
@@ -1934,17 +1990,17 @@ $ make
 
 {% endhighlight %}
 
-If you reload the http://localhost:5000/ page now, 
+If you reload the http://localhost:5000/ page now,
 and look at the error console you'll see:
 
-<img src="/assets/img/sync1.png" hspace="30" vspace="30" 
-alt="the signup page" 
+<img src="/assets/img/sync1.png" hspace="30" vspace="30"
+alt="the signup page"
 style="border:1px solid black; width:80%;height:80%"/>
 
 This is only a cross-check between the Go and HTML code,
 and it's still possible to get "out of sync" between the two, but this
 prevents at least some of the most common problems when renaming
-HTML elements.  It can also be triggered intentionally as a 
+HTML elements.  It can also be triggered intentionally as a
 "dead HTML code" check.
 
 <a name="pwd-server"></a>
@@ -1960,17 +2016,17 @@ You'll need to have Fresno running for this lesson.
 With the background covered in the previous two lessions, let's log in
 to Fresno.
 
-<img src="/assets/img/login2.png" hspace="30" vspace="30" 
-alt="the signup page" 
+<img src="/assets/img/login2.png" hspace="30" vspace="30"
+alt="the signup page"
 style="border:1px solid black; width:80%;height:80%"/>
 
 > Don't forget to change your ul tag in `pages/template/support/page.tmpl`
 > back and remove the "xxx" if you made that change in the previous lesson!
 
 The screenshot above shows the Log In button as enabled, but that does
-not happen until you have entered an email address and a password. 
+not happen until you have entered an email address and a password.
 Naturally, this is implemented via [constraints](#constraints) in
-the function formIsBad() in `client/login.go`. 
+the function formIsBad() in `client/login.go`.
 
 When you push the button, a bundle is sent to the /auth URL of the
 server.  This is accomplished by pulling the username and
@@ -2017,8 +2073,8 @@ Joe's password is set in the file `migrate/main.go` to "seekret".  When
 you click the button to log in as joe, you'll return to the index
 page, but it will look like this:
 
-<img src="/assets/img/loggedin1.png" hspace="30" vspace="30" 
-alt="the signup page" 
+<img src="/assets/img/loggedin1.png" hspace="30" vspace="30"
+alt="the signup page"
 style="border:1px solid black; width:80%;height:80%"/>
 
 ## "Simple" in Seven5
@@ -2043,7 +2099,7 @@ type FullImplementationOfFooThatsEnoughToStartWithButMightNotBeWhatYouWantLongTe
 {% endhighlight  %}
 
 This naming convention is used throughout Seven5, so you can recognize the
-intention of many types from their names. 
+intention of many types from their names.
 
 ## Server side of password authentication
 
@@ -2052,17 +2108,17 @@ and destroying sessions and coordinating this with a cookie maintained
 on the user's browser.  However, it cannot know the application specific
 definition of the semantics of "log in".  Seven5 provides an interface
 ValidatingSessionManager which you can implement and then pass to another
-Seven5 type: SimplePasswordHandler. 
+Seven5 type: SimplePasswordHandler.
 
 This implies a layering like this, with the implementor in parenthesis:
 
 <pre>
-SimpleSessionManager (seven5) 
+SimpleSessionManager (seven5)
     MyValidatingSessionManager (you)  
         SimplePasswordHandler (seven5)
 </pre>
 
-The Go code basics for this particular layering applied to Fresno is in 
+The Go code basics for this particular layering applied to Fresno is in
 `fresno/validating_sm.go`.
 
 {% highlight go %}
@@ -2084,7 +2140,7 @@ func newFresnoValidatingSessionManager() s5.ValidatingSessionManager {
 
 {% endhighlight  %}
 
-### ValidatingSessionManager 
+### ValidatingSessionManager
 
 ValidatingSessionManager is an interface to allow you to implement
 your application-level semantics:
@@ -2104,7 +2160,7 @@ type ValidatingSessionManager interface {
 We will ignore the password reset code for now, but the
 methods ValidateCredentials and SendUserDetails are worth discussing
 now.  These methods are used for checking the password and transmitting
-a user record to the client side, respectively. 
+a user record to the client side, respectively.
 
 Here are the implementations of these two methods from `validating_sm.go`;
 we have removed some of the error checking for clarity:
@@ -2159,24 +2215,24 @@ You'll need to have Fresno running for this lesson.
 This tutorial, so far, has not really been about blogging.  The first
 dozen-or-so lessons have been about all the _other_ things that you
 need to understand to make a real, working application.  We have
-discussed databases, migrations, deployment, dependency 
+discussed databases, migrations, deployment, dependency
 management, password authentication, code conventions for a
-real application, and some REST with a sprinkle of data interchange. 
+real application, and some REST with a sprinkle of data interchange.
 
-This was by design; most tutorials leave out all the "other stuff" 
-and one ends up with an app that does a few simple things, 
-usually running locally, and then the "hard part" comes when you try 
-to make it real.  This tutorial has covered all the hard parts already, 
+This was by design; most tutorials leave out all the "other stuff"
+and one ends up with an app that does a few simple things,
+usually running locally, and then the "hard part" comes when you try
+to make it real.  This tutorial has covered all the hard parts already,
 now we can focus on getting to the semantics of our application.
 
 ## Index methods
 
 Index methods are for listing a collection of identical REST resources,
-such as blog posts. In Fresno, we use a database query to get the list 
-of posts to return to the client side.  The index method takes some query 
+such as blog posts. In Fresno, we use a database query to get the list
+of posts to return to the client side.  The index method takes some query
 parameters to allow the client side to do pagination if it desires.  Finally,
 we do a slight bit of adjustment to the joined user record that represents
-the author of the post. 
+the author of the post.
 
 The code, from `resource/post.go`, is:
 
@@ -2213,7 +2269,7 @@ func (self *PostResource) IndexQbs(pb s5.PBundle, q *qbs.Qbs) (interface{}, erro
 
 ## Joiner
 
-Frequently, you will want a web page to display a series of broadly 
+Frequently, you will want a web page to display a series of broadly
 similar items, such as blog posts in Fresno. Seven5 provides two types
 that aid in this process: Joiner and Collection.  A Collection models
 a sequence of items to be displayed on the screen and the Joiner does
@@ -2231,7 +2287,7 @@ items of a resource type:
 3. Add model to collection
 
 The last of these steps will end up calling the Add() method on the
-Joiner to display each model on the screen. 
+Joiner to display each model on the screen.
 
 Step 2 may seem strange at first, since we are effectively  decoding the
 raw content into one "model", the wire type used with the Ajax call, and
@@ -2309,13 +2365,13 @@ s5.DIV(
 
 It is customary to put any CSS classes "first" in the list of decendents
 from a given node.  We have done that above in adding the "row" class
-to the top level node and two [bootstrap](http://getbootstrap.com/css/) 
-classes to the inner div. 
+to the top level node and two [bootstrap](http://getbootstrap.com/css/)
+classes to the inner div.
 
 This should make it clear that in fact the _type_ of elements passed
 as parameters to a call like DIV() or SPAN() is dealt with at run-time.
-There are many different types of things that can be present in the 
-"child list" to a call that creates a node.  Let's bind a click handler 
+There are many different types of things that can be present in the
+"child list" to a call that creates a node.  Let's bind a click handler
 for the span "foo":
 
 {% highlight go %}
@@ -2379,17 +2435,17 @@ tree:=s5.DIV(
     ),
 ).Build()
 parent.Dom().Append(tree)
- 
+
 {% endhighlight  %}
 
 ### Binding values from the model
 
 In the client-side code (`client/post/index.go`) for the index page, we
-want to display the title on screen based on the model that 
-represents what was retrieved from the server. 
+want to display the title on screen based on the model that
+represents what was retrieved from the server.
 
 Given what we have just learned about tree building, here is a real
-example, part of Add(), one of the two methods (with Remove()) 
+example, part of Add(), one of the two methods (with Remove())
 required by the Joiner interface that we are implementing.
 
 {% highlight go %}
@@ -2453,7 +2509,7 @@ Three other critical lines are the three calls to s5.TextEqual().  The
 TextEqual() method takes a StringAttribute and binds its content
 to the visible portion (textual part) of the tag it is nested inside.
 Because this uses [constraints](#constraints), if you change the value
-in the model, the screen will be updated appropriately. 
+in the model, the screen will be updated appropriately.
 
 Sometimes it helps to squint.  If you squint when looking at the tree
 being constructed above, you can see that it forms one large parent
@@ -2470,8 +2526,8 @@ the [Ajax idiom](#ajax-idiom) in Start() (in `client/post/index.go`) to
 request the posts.  At this point, it doesn't try to do pagination.
 If the results are returned successfully, it receives a slice of pointers
 to shared.Post() (`shared/post.go`), a.k.a. a slice of wire types.
-It then calls addPost() which takes the new shared.Post() object and 
-converts it to a postModel, and finally adds that to the collection 
+It then calls addPost() which takes the new shared.Post() object and
+converts it to a postModel, and finally adds that to the collection
 of posts.
 
 It is worth noting that the posts collection has to now be initialized
@@ -2479,7 +2535,7 @@ when we create the page object.  This collection is "per-page state"
 that exists during the entire time the page is visible in the browser.
 We mention this per-page state because it is easy to forget about the
 fact that there is code that must be holding state to make the UI respond
-to various actions by the user, or data received via the network. 
+to various actions by the user, or data received via the network.
 Because of constraints, you typically can just build your Seven5 data
 structures and then _let it run_.
 
@@ -2493,21 +2549,21 @@ You'll need to have Fresno running for this lesson.
 
 ## New Post
 
-Make sure you are logged in as someone.  The "New Post" button on the UI is 
+Make sure you are logged in as someone.  The "New Post" button on the UI is
 shown to logged in users (more on that later).  Click on the New Post button
 and enter some text into the form.  Here is an example that demonstrates that
 you can use [markdown](http://en.wikipedia.org/wiki/Markdown).
 
-<img src="/assets/img/newpost.png" hspace="30" vspace="30" 
-alt="the new post page" 
+<img src="/assets/img/newpost.png" hspace="30" vspace="30"
+alt="the new post page"
 style="border:1px solid black; width:80%; height:80%;"/>
 
 Once you have entered the new post, click the Post button in blue at the
-bottom left.  You should see _part_ of your new post in the list on the 
+bottom left.  You should see _part_ of your new post in the list on the
 [index page](http://localhost:5000/).
 
-<img src="/assets/img/posts2.png" hspace="30" vspace="30" 
-alt="the new post page" 
+<img src="/assets/img/posts2.png" hspace="30" vspace="30"
+alt="the new post page"
 style="border:1px solid black; width:80%; height:80%;"/>
 
 ## Sharing code
@@ -2515,12 +2571,12 @@ style="border:1px solid black; width:80%; height:80%;"/>
 There isn't much "new" to learn from the particulars of how the client side
 posts the content from the form and gets the result.  This works in much the
 same way as the [signup form](#signup-form).  The code can be found in
-`client/uicommon/editpost.go` in the method SubmitPost(). 
+`client/uicommon/editpost.go` in the method SubmitPost().
 
-Potentially more interesting is the fact that the code is in uicommon in a 
+Potentially more interesting is the fact that the code is in uicommon in a
 file called `editpost.go`.  This is because the page to edit a post and the
 page to create a new post are very similar.  The only significant difference
-from the user's point of view is that the post's title and content are 
+from the user's point of view is that the post's title and content are
 already filled in when editing an existing post.  From the code's standpoint
 there is the user-visible difference plus the fact that the REST verb to
 be used is POST for creating a new post and PUT for updating an existing post.
@@ -2530,7 +2586,7 @@ post (return to show post page).
 
 It is a common problem that you have two very similar pages that need to
 share a good bit of implementation.  The approach used by Fresno is to create
-a very weak "class" in the 
+a very weak "class" in the
 [Object Oriented](http://en.wikipedia.org/wiki/Object-oriented_programming)
 sense.  The "class" is defined as this struct in `client/uicommon/editpost.go`:
 
@@ -2591,10 +2647,10 @@ func main() {
 
 {% endhighlight %}
 
-There is a similar but slightly more complex version of this call to 
+There is a similar but slightly more complex version of this call to
 uicommon.NewEditPostPage() in `client/post/edit.go`.  It is slightly more
-complex because the content to initialize the interface with must be 
-fetched from the server.  By contrast, the code above has the empty function 
+complex because the content to initialize the interface with must be
+fetched from the server.  By contrast, the code above has the empty function
 as its setup function.
 
 ## Summaries
@@ -2602,11 +2658,11 @@ as its setup function.
 If you look at the two screenshots from earlier in this lesson, you'll notice
 that the text entered in the first was substantially larger than what is shown
 in the second.  You can click on the title of a blog post to see the full
-blog post or you can use the URL /post/1/view or similar. 
+blog post or you can use the URL /post/1/view or similar.
 
-In `client/uicommon/editpost.go` in the method SubmitPost() there is some 
+In `client/uicommon/editpost.go` in the method SubmitPost() there is some
 code that attempts to "break" a long post into two parts, the summary portion
-that is shown on the index page and the rest.  It tries to break after a 
+that is shown on the index page and the rest.  It tries to break after a
 newline, if possible.  The effects of this can be seen in the next lesson.
 
 <a name="posts-p2"></a>
@@ -2654,7 +2710,7 @@ This code is actually quite wasteful in that the larger portion of the
 text that gets processed (the Text field) is not used by the client side
 and ends up being discared.
 
-### Find 
+### Find
 
 {% highlight go %}
 
@@ -2721,12 +2777,12 @@ func (u *urlgen) Post(id int64, wantMarkdown bool) string {
 
 Since the client and server both compile all the code in the shared directory,
 including URLGen, it is impossible for the query parameter that is being
-used here, MARKDOWN_PARAM, to get "out of sync" with the code on the 
+used here, MARKDOWN_PARAM, to get "out of sync" with the code on the
 server side that uses it in FindQbs.
 
 ## Displaying HTML
 
-In two places, we must display already created HTML markup.  We use our 
+In two places, we must display already created HTML markup.  We use our
 [tree building](#treebuilding) approach to insert the already created
 HTML code into the DOM.  Let's look at the code that displays a full
 blog post in `client/post/view.go`.  In displayPost():
@@ -2775,8 +2831,8 @@ You'll need to have Fresno running for this lesson.
 
 ## URLs to static files
 
-You should try typing in some different URLs to see what effect they have on 
-Fresno.  Here are some samples (you need to add the http://localhost:5000 
+You should try typing in some different URLs to see what effect they have on
+Fresno.  Here are some samples (you need to add the http://localhost:5000
 in front, of course) for the index page.
 
 * /
@@ -2799,7 +2855,7 @@ For the first blog post:
 
 All of the URLs in the first set correspond to a single static file,
 `static/en/web/post/index.html`.  Note that this is the singular "post"
-in the path, not the plural.  All of the URLs in the second group 
+in the path, not the plural.  All of the URLs in the second group
 correspond to the single static file `static/en/web/post/view.html`.
 
 The mapping between URLs that a user types, or links they traverse, to
@@ -2812,7 +2868,7 @@ easily construct URLs that correspond to particular back-end entities.
 * We don't want to duplicate static files, despite the fact that there may
 be multiple ways in the URL space to access the same logical entity.
 
-* We want to generate HTTP code 304 for static files when possible.  In 
+* We want to generate HTTP code 304 for static files when possible.  In
 particular, we want a URL like /post/1/view to not load the fixed part,
 the HTML content, in `static/en/web/post/view.html` extra times if it has
 not changed.
@@ -2828,7 +2884,7 @@ such as switching to "/en/mobile" for a mobile phone-based browser.
 ## StaticComponents
 
 The mechanism in Seven5 for handling the mapping between the URL space and
-the filesystem (really the `static` directory) is 
+the filesystem (really the `static` directory) is
 [StaticComponent](https://gowalker.org/github.com/seven5/seven5#StaticComponent).
 This is only for user-visible URLs, not URLs in the REST namespace ("/rest").
 In the setup() function of Fresno (`fresno/main.go`) there are four statements
@@ -2850,35 +2906,35 @@ of configuration related to StaticComponents:
 
 {% endhighlight %}
 
-The first statement creates a 
-[ComponentResult](https://gowalker.org/github.com/seven5/seven5#ComponentResult) 
-that specifies what is to occur when the user comes to the homepage (URL is "/"). 
+The first statement creates a
+[ComponentResult](https://gowalker.org/github.com/seven5/seven5#ComponentResult)
+that specifies what is to occur when the user comes to the homepage (URL is "/").
 The middle two lines shown create StaticComponents.  The last statement uses those
-two components as initialization parameters (the last two) in creating a 
-SimpleComponentMatcher. 
+two components as initialization parameters (the last two) in creating a
+SimpleComponentMatcher.
 
 [SimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#SimpleComponentMatcher)
 is a utility for serving up static files from a static
-directory (note the staticDir parameter to 
+directory (note the staticDir parameter to
 [NewSimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#NewSimpleComponentMatcher)).
 It has many options but we are primarily interested in how it uses the homepage,
 postComponent, and indexComponent local variables.
 
 ### ComponentResult
 
-The variable "homepage" is an instance of the type ComponentResult.  A 
-[ComponentResult](https://gowalker.org/github.com/seven5/seven5#ComponentResult) 
+The variable "homepage" is an instance of the type ComponentResult.  A
+[ComponentResult](https://gowalker.org/github.com/seven5/seven5#ComponentResult)
 is used when a StaticComponent wishes to communicate with the matcher.
 It has a number of fields, but generally the most important ones are Status,
 Redir, and Path.  The Status field is an HTTP response code.  If the Status
 code is 200 (OK) then the Path field is consulted for what static content
 to try to serve.  If the Status field is 302 (MovedPermanently) then the Redir
 field is consulted for what URL the browser should be redirected to. Any other
-status value is returned to the browser as unchanged, although this usage is 
+status value is returned to the browser as unchanged, although this usage is
 rare.
 
 It is important to understand that the Components operate _before_ other
-processing.  In particular, if the user requests a URL such as 
+processing.  In particular, if the user requests a URL such as
 "/post/1/hackyhack.html" the ComponentResult returned is likely to have
 Status 200 with a path of "/en/web/post/hackyhack.html".  This will likely
 fail to serve, and ultimately the user will receive a 404.  However, from
@@ -2890,13 +2946,13 @@ scripts.
 
 ### SimpleIdComponent
 
-[SimpleIdComponent](https://gowalker.org/github.com/seven5/seven5#SimpleIdComponent) 
+[SimpleIdComponent](https://gowalker.org/github.com/seven5/seven5#SimpleIdComponent)
 is a utility for creating a Component that understands URLs
-like /foo/123/verb.  The parameters provided to 
+like /foo/123/verb.  The parameters provided to
 [NewSimpleIdComponent](https://gowalker.org/github.com/seven5/seven5#NewSimpleIdComponent)
 are the part of the URL space ("post" in our example) to use and three functions
 that provide "checks" on the URL.  These are
-[ExistCheck](https://gowalker.org/github.com/seven5/seven5#ExistsCheck), 
+[ExistCheck](https://gowalker.org/github.com/seven5/seven5#ExistsCheck),
 [NewCheck](https://gowalker.org/github.com/seven5/seven5#NewCheck), and
 [ViewEditCheck](https://gowalker.org/github.com/seven5/seven5#ViewEditCheck).
 
@@ -2926,18 +2982,18 @@ func viewEditCheck(pb s5.PBundle, id int64, isView bool) (bool, error) {
 {% endhighlight %}
 
 If either of these functions returns false, processing stops and the matcher
-returns false; the user's browser will receive a 401 response code 
+returns false; the user's browser will receive a 401 response code
 (Unauthorized).
 
 #### CookieMapper and SessionManager
 
-If you are wondering why the parameters to 
+If you are wondering why the parameters to
 [NewSimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#NewSimpleComponentMatcher)
-included the application's 
+included the application's
 [CookieMapper](https://gowalker.org/github.com/seven5/seven5#CookieMapper)
-and [SessionManager](https://gowalker.org/github.com/seven5/seven5#SessionManager), 
+and [SessionManager](https://gowalker.org/github.com/seven5/seven5#SessionManager),
 the reason is the [PBundle](https://gowalker.org/github.com/seven5/seven5#PBundle)
-parameter to the functions above.  To create a proper PBundle, which may 
+parameter to the functions above.  To create a proper PBundle, which may
 include session data encoded in a cookie, the matcher must interact with
 the CookieMapper and SessionManager.   Put another way, to correctly understand
 if the URL /foo/123/edit is an acceptable URL, we may need to know who this
@@ -2954,7 +3010,7 @@ post, such as "new.html" or "edit.html"
 
 ## SimpleComponentMatcher
 
-The type 
+The type
 [SimpleComponentMatcher](https://gowalker.org/github.com/seven5/seven5#SimpleComponentMatcher)
 is responsible for taking in a URL for content (not a REST resource)
 and finding the static file to serve.  In considering the call to
@@ -2993,5 +3049,5 @@ EXERCISES
 * Generator for wrapping around Ajax methods and getting the types right
 * Generate for creating a new "page" in the application
 * Add a dialog box for "are you sure you want to cancel" if post has changes
-* Pagination 
+* Pagination
 * Logout
