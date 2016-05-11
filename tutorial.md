@@ -50,11 +50,12 @@ This document assumes you understand
 * a tiny bit of PostgreSQL and SQL
 * a tiny bit of curl
 
-Further, this tutorial assumes you are developing on a Mac using OS/X or
+Further, this tutorial assumes you are developing on a Mac using OSX or
 a similar-enough Linux installation.
 
 You will need to have a version of Go installed that is at least 1.6. The
-recommended way to do this on OSX is via brew.
+recommended way to do this on OSX is via brew, for example
+`brew install golang`.
 
 The PostgreSQL version doesn't matter too much, probably anything from 9.1
 to 9.5+ will work fine.  This tutorial was developed on PostgreSQL 9.5.
@@ -64,12 +65,11 @@ Any version of curl should be fine.
 <a name="setup"></a>
 
 # One time bootstrap
-This section does not need to be repeated once it done once.
+This section does not need to be repeated once it is done.
 
-You have to have go installed on your system, version 1.6 or higher.  This tutorial
-was written with go 1.6.2.  If you installed go in a "non-standard" place
-you'll need to know what you want GOROOT to be set to.  If you don't know what
-GOROOT is, it's likely you can ignore it.
+You have to have go installed on your system, version 1.6 or higher.
+This tutorial was written with go 1.6.2.  If you installed go in a
+"non-standard" place you'll need to know what you want `GOROOT` to be set to.  If you don't know what `GOROOT` is, it's likely you can ignore it.
 
 You can test that your go environment is set up properly like this:
 {% highlight bash %}
@@ -78,25 +78,21 @@ $ go version
 go version go1.6.2 darwin/amd64
 {% endhighlight %}
 
-Note that the last words can vary if you are on a different operating system
-or architecture from the author. `linux/amd64` is another common value for Linux
-users.
+Note that the last words can vary if you are on a different
+operating system or architecture from the author. "linux/amd64"
+is another common value for Linux users.
 
-We use `gb` to build this tutorial. You don't need any configuration to _use_ gb
-but you will need to insure its installed in your `PATH` somewhere.  It is
-recommended to just put it in the same directory as your go binaries:
-{% highlight bash %}
+We use `gb` to build this tutorial. You don't need any configuration
+to _use_ gb but you will need to insure its installed in your `PATH`
+somewhere.  It is recommended to just put gb in the same directory as
+your go binaries.  
 
-$ which go
-/Users/iansmith/go16/go/bin/go
-
-{% endhighlight %}
-
-A quick way to build GB on your system, if `go` is in your path, is like this:
+A quick way to build `gb` on your system, assuming `go` is in your path,
+is like this:
 
 {% highlight bash %}
 
-$ mkdir /tmp/gb/src
+$ mkdir -p /tmp/gb/src
 $ cd /tmp/gb
 $ GOPATH=`pwd` go get github.com/constabulary/gb
 $ GOPATH=`pwd` go install github.com/constabulary/gb
@@ -105,13 +101,13 @@ $ ls -l bin/gb
 
 {% endhighlight %}
 
-You can now copy the binary `/tmp/gb/bin/gb` to any directory in your path.
+You can now copy the binary `/tmp/gb/bin/gb` to any directory in your `PATH`.
 
 # Setting Up For Seven5 Development
 
 You need to layout the source code in a particular way to make various
-Go- and Seven5-related tools happy. Create a directory structure for this tutorial
-like this:
+Go- and Seven5-related tools happy. Create a directory structure for
+this tutorial like this:
 
 {% highlight bash %}
 
@@ -123,10 +119,11 @@ $ mkdir src
 
 {% endhighlight %}
 
-This document will refer to the directory `tutroot` created first above as
-`$TUTROOT`.  If you plan to set an actual environment variable to this value
-(rather than just doing the subsitution in your head as your read) you _must_
-set `$TUTROOT` to absolute path, not a relative one--it must start with a slash.
+This document will refer to the directory `tutroot` created first
+above as `TUTROOT`.  If you plan to set an actual environment variable
+to this value (rather than just doing the substitution in your head
+as your read) you _must_ set `TUTROOT` to absolute path, not a
+relative one--it must start with a slash.
 
 Clone the tutorial repository and the other seven5 packages:
 
@@ -134,9 +131,9 @@ Clone the tutorial repository and the other seven5 packages:
 
 $ mkdir -p $TUTROOT/src/github.com/seven5
 $ cd $TUTROOT/src/github.com/seven5
-$ git clone git@github.com:seven5/tutorial.git
-$ git clone git@github.com:seven5/seven5.git
-$ git clone git@github.com:seven5/gb-seven5.git
+$ git clone https://github.com/seven5/tutorial.git
+$ git clone https://github.com/seven5/seven5.git
+$ git clone https://github.com/seven5/gb-seven5.git
 $ cd tutorial
 $ git checkout tutorial
 $ cat enable-tutorial.tmpl
@@ -148,12 +145,12 @@ and you should put in this file any "local" setup that you need to do
 have the this tutorial work, but also to not break other projects you
 have on your system.
 
-You should *copy* this file to your `$TUTROOT` directory and then edit it:
+You should *copy* this file to your `TUTROOT` directory and then edit it:
 
 {% highlight bash %}
 
 $ cd $TUTROOT/src/github.com/seven5/tutorial
-$ cp enable-tutorial.tmpl ~/tutroot/enable-tutorial
+$ cp enable-tutorial.tmpl $TUTROOT/enable-tutorial
 
 {% endhighlight %}
 
@@ -166,11 +163,15 @@ $ cd $TUTROOT
 $ source enable-tutorial
 $ go version
 go version go1.6.2 darwin/amd64
+$ echo $DATABASE_URL
+postgres://iansmith@localhost:5433/fresno
 
 {% endhighlight %}
 
-The output of the last command should be version 1.6+ and appropriate
-for your operating system and processor architecture.
+The output of the `go version` should be apropriate for your platform--this
+is a test to make sure you have your `PATH` reasonably set.  The output of
+the last command should contain your username and the port you have chosen to
+use for postgres. This is a sanity check on your other environment variables.
 
 <a name="gb"></a>
 
@@ -180,8 +181,9 @@ for your operating system and processor architecture.
 extended for this tutorial (and your own projects, if you choose) with a plugin
 to make building Seven5-based apps easier and faster.
 
-From the previous section, you should have `gb` installed in your path.  You can
-verify this with
+From the previous section, you should have `gb` installed in your path.
+You can verify this with:
+
 {% highlight bash %}
 
 $ which gb
@@ -227,7 +229,7 @@ Getting github.com/coocood/qbs
 
 Now, if you look in `vendor/src/github.com` you will see many 3rd party packages
 that are used by the this tutorial.  You can be assured that if you succeeded with
-`gb vendor` you have precisely the versions you need to run the tutorial successfully.
+`gb vendor`, you have precisely the versions you need to run the tutorial successfully.
 
 <a name="simple-server"></a>
 
@@ -235,13 +237,17 @@ that are used by the this tutorial.  You can be assured that if you succeeded wi
 
 For this lesson and all the ones following, we'll assume that you know
 what `$TUTROOT` is on your system and that you have sourced the
-`enable-tutorial` script into your shell environment.
+`enable-tutorial` script into your shell environment.  Also, from this point
+in the tutorial when we refer to source files that are part of the tutorial
+we will say `fresno/main.go` rather than the much longer
+`$TUTROOT/src/github.com/seven5/tutorial/fresno/main.go`.  All the tutorial source
+files are underneath `$TUTROOT/src/github.com/seven5/tutorial`.
 
 ## Environment variables
 
 All configuration of Seven5 applications is done through environment
 variables.  This makes them [twelve factorish](http://12factor.net) and
-easy to deploy on heroku.
+easy to deploy, particularly on [heroku](http://heroku.com).
 
 > If you are deeply interested in heroku you may want to take the
 > [heroku detour](heroku.html).
@@ -251,27 +257,28 @@ easy to deploy on heroku.
 {% highlight bash %}
 
 $ cd $TUTROOT
-$ gb build github.com/seven5/tutorial/fresno
+$ gb build github.com/seven5/tutorial/...
 github.com/lib/pq/oid
 github.com/shurcooL/sanitized_anchor_name
 ...
 $ fresno
-2015/03/15 18:47:39 DATABASE_URL found, connecting to postgres://iansmith@localhost:5432/fresno
+2015/03/15 18:47:39 DATABASE_URL found, connecting to postgres://iansmith@localhost:5433/fresno
 2015/03/15 18:47:39 [SERVE] (IsTest=true) waiting on :5000
 
 {% endhighlight %}
 
 You can try going to "http://localhost:5000/" with your browser, but you won't
 see much because the server wants to connect to a database and you probably
-don't have one ready yet.
+don't have one ready yet.  If the fresno server fails to connect to the database
+you will get a stacktrace in your terminal.
 
 <a name="database"></a>
 
 # Add A Database
 
 Most realistic applications need access to a reliable relational store.
-Fresno is no exception, so we'll go ahead and set this up now.  You may
-have noticed previously that our enable script sets a DATABASE_URL
+Fresno is no exception, so we'll go ahead and set this up now.  As
+we showed previously, our enable script sets a `DATABASE_URL`
 environment variable.
 
 ## PostgreSQL
@@ -282,7 +289,7 @@ and then follow its directions about how to run the database.  On a
 Linux system, use your package manager (yum, apt-get, pacman, or similar)
 to install the PostgreSQL server.
 
-This document was written with PostgreSQL version 9.3, but other versions
+This document was written with PostgreSQL version 9.5, but other versions
 in the 9.x series will likely work.
 
 ## Local database setup
@@ -311,7 +318,7 @@ $ psql $DATABASE_URL
 
 {% endhighlight %}
 
-on your local system or for the remote database on heroku: TBD
+on your local system.
 
 <a name="migrations"></a>
 
@@ -335,7 +342,8 @@ will be called "migrate" because its source is in the `migrate` directory.
 
 ## How migrations work
 
-You can see the example migrations in `migrate/main.go`.
+You can see the example migrations in
+`src/github.com/seven5/tutorial/migrate/main.go`.
 These migrations are just SQL statements wrapped in Go.  The table at the
 top controls the behavior of the resulting program:
 
@@ -408,16 +416,22 @@ tables created.
 
 ## Building and running the migrations locally
 
-You can build and run the migration application like this:
+If you look in `TUTROOT/bin` you'll notice that the command we used before
+to build fresno also built the migration application.  If you make changes
+to the migrations and want to build _just_ that application, you can do
+so like this:
 
 {% highlight bash %}
+$ gb build github.com/seven5/tutorial/migrate
+{% endhighlight %}
 
-$ godep go install tutorial/migrate
+When you want to use the migration application you can migrate up like this:
+
+{% highlight bash %}
 $ migrate --up
 [migrator] attempting migration UP 001
 [migrator] attempting migration UP 002
 002 UP migrations performed
-
 {% endhighlight %}
 
 You may find it interesting to use "psql" (see [previous lesson](#psql))
@@ -504,10 +518,12 @@ are the building blocks of
 customary to name your resource implementations in Seven5 applications
 as "FooResource" in the package `resource` if this provides the API
 implementation of the noun "foo". You can see the implementations of
-"UserRecordResource" and "PostResource" in the files `resource/user_record.go`
-and `resource/post.go`, respectively.  Note that these are in different
-package typically from your main (`fresno/main.go`) so they must be
-capitalized.
+"UserRecordResource" and "PostResource" in the files
+`resource/user_record.go`
+and `resource/post.go`, respectively.
+
+Note that resource implementations are in different package typically from your main
+(`fresno/main.go`) so they must be capitalized.
 
 The objects to be exchanged over the wire between client and sever,
 referred to as _wire types_ in Seven5, are represented as go structures
@@ -528,9 +544,10 @@ and the wire representation (that is exchanged between client and server).
 
 The wire types are the "nouns" in the sense of RESTful API design.
 These are are in `shared/post.go` and
-`shared/user_record.go` and coded as uppercase, singular nouns ("Post").
-Because they are in a separate package, and because they must be
-serializable with "encoding/json", the fields must be uppercase also.
+`shared/user_record.go` and coded
+as uppercase, singular nouns ("Post"). Because they are in a separate package,
+and because they must be serializable with "encoding/json", the fields must
+be uppercase also.
 
 Here are the two wire types:
 
@@ -622,7 +639,7 @@ wire type:
 
 In the above connection of a user record to its implementing resource,
 we have passed nil in three places to indicate that some "verbs" are not
-implemented for this resource.
+implemented for this resource. You can see the effect of this with curl:
 
 {% highlight bash %}
 
@@ -700,25 +717,27 @@ real application.
 Let's look at sending fixed, static files between the client and server.
 
 ## Preparation for this lesson
-As before, you'll need to have godep and gopherjs installed,
-a database running, migrations run, and Fresno built and running.
+As before, you'll need to have gb installed for this lesson.  We are going
+to build the seven5 extension of gb that facilitates working with the
+static site files.
 
-You'll also need to have a working copy of "make" installed on your system
-as demonstrated here with the "which" command. If you get no output, it's
-not installed:
+You can build the extension with gb (of course!) as we will do below.  For
+this section, you will also need to have a copy of gopherjs installed and
+we'll do that with go, because it is located in the vendored area and gb
+doesn't like starting builds in `vendor`.
 
 {% highlight bash %}
 
-$ which make
-/usr/bin/make
-
+$ cd $TUTROOT
+$ gb build github.com/seven5/gb-seven5
+github.com/seven5/gb-seven5
+$ GOPATH=`pwd`/vendor go build -o bin/gopherjs  github.com/gopherjs/gopherjs
 {% endhighlight %}
 
-If you are on OS/X, you have use the App Store to install the "XCode"
-application, then navigate to XCode -> Preferences -> Downloads and
-install the component named "command line tools".  On most Linux
-systems, "make" is installed by default but on Ubuntu you may need to
-install the (enormous) package "build-essential".
+The commands above install the program `gb-seven5` in your `$TUTROOT/bin`
+directory.  This is used when you issue a command that starts with `gb seven5`.
+It also puts `gopherjs` in your `$TUTROOT/bin` directory.
+
 
 ## Static files and Don't Repeat Yourself
 
@@ -745,7 +764,10 @@ repetition in them. Repetition makes things hard to maintain because you
 can't make any change "in just one place".  "pagegen" is a tool that
 lets you keep everything [OAOO](http://c2.com/xp/OnceAndOnlyOnce.html).
 
-The program "pagegen" is in the directory `pagegen` which sets some
+You may have noticed that the program `pagegen` was installed in your
+`$TUTROOT/bin` directory when you built you built fresno.
+
+The source code for pagegen is in the `pagegen/main.go` file, which sets some
 [options](https://gowalker.org/github.com/seven5/seven5#PagegenOpts)
 and then calls the
 [main](https://gowalker.org/github.com/seven5/seven5#PagegenOpts_Main)
@@ -786,44 +808,52 @@ by pagegen.
 
 ### Building pagegen
 
+If you want build _only_ pagegen, you can do that like this:
+
 {% highlight bash %}
 
-$ godep go install tutorial/pagegen
+$ cd $TUTROOT
+$ gb build github.com/seven5/tutorial/pagegen
 
 {% endhighlight %}
 
-This builds the pagegen command, and you'll need to do this before going
-further.
+This builds the pagegen command, and you'll need to make sure you have a built
+copy in your `$TUTROOT/bin` before continuing.  Normally, though, you won't
+need to invoke pagegen directly, but rather the Seven5 extension for gb will
+do that.
 
 ## Building index.html (and other pages)
 
-The directory `pages` has all the static file content. You can go into
-the `pages` directory and type `make html` to build the content.  (You can
-do `make clean` before `make html` if you want to force make to do a full
-rebuild.):
+The directory `pages` has the static file content that has been
+created for the fresno's web pages. The directory that
+is served by the fresno application is `static` which is the output directory
+to `pages` input. You can check the static directory with the environment
+variable `STATIC_DIR`.
+
+To (re)create the static output from the static input you can pass the name
+of the go package that has the structure of a `pages` directory and a
+`static` directory.
 
 {% highlight bash %}
 
-$ cd $TUTROOT/src/tutorial/pages
-$ make html
-[similar output for other files]
-pagegen --support=support --dir=template --start=post/index.html --json=post/index.json > ../static/en/web/post/index.html
-[similar output for other files]
-$ make html
-make: Nothing to be done for `html'.
-
+$ cd $TUTROOT
+$ gb seven5 github.com/seven5/tutorial
+$ ls src/github.com/seven5/tutorial/static/en/web
+login.html    login.js      login.js.map  post          signup.html   signup.js     signup.js.map
 {% endhighlight %}
 
-> This make command must be run from the directory `pages`, it has relative
-> paths that require, for example, `../static` to resolve to `TUTROOT/static`.
+You'll see that this directory now has all the "code" associated with the
+login page: `login.html` and the supporting javascript code `login.js`.  The
+file `login.js.map` is a source map file to allow you to do source level
+(go) debugging when in a browser.  Similarly, you can see all the code associated
+with the signup page; there are some additional pages in the post directory.
 
-We are going to start by examining one of the pagegen commands that were run
-by make, generating `static/en/web/post/index.html`, above.
 
-The "base" HTML file is `pages/template/post/index.html`.
-The JSON data bundle for that page is `pages/template/post/index.json`.
+The "base" or "landing" HTML file for the fresno application is
+`pages/post/index.html`. The JSON data bundle for that page is
+`pages/post/index.json`.
 
-The `pages/template/post/index.html` file is:
+The `pages/post/index.html` file is:
 
 {% highlight html %}
 
@@ -857,7 +887,7 @@ The `pages/template/post/index.html` file is:
 
 {% endhighlight %}
 
-The `pages/template/index.json` file is:
+The `pages/post/index.json` file is:
 {% highlight json %}
 
 {
@@ -873,22 +903,27 @@ to create the final HTML output. If you are familiar with
 [go templates](http://golang.org/pkg/text/template/), these are just Go
 templates with the data provided by the JSON file.
 
-The make command above referenced the support directory
-`pages/template/support`.  _All_ the templates found in this directory
+The gb Seven5 extension knows about the pagegen application and how to
+invoke it to create the html output files, like
+`static/en/web/post/index.html` from the input templates, such as the
+one above.
+
+There are a number of "utility" templates in the support directory
+`pages/support`.  _All_ the templates found in this directory
 (files ending in ".tmpl") are available to the page being generated.  For
 example, you can see the definition of the referenced
-template BOOTSTRAP_HEAD_SECTION in `pages/template/support/bootstrap.tmpl`
+template BOOTSTRAP_HEAD_SECTION in `pages/support/bootstrap.tmpl`
 and the templates MISC_FOOTER and MISC_JSLOAD in
-`pages/template/support/misc.tmpl`.
+`pages/support/misc.tmpl`.
 
 It should be noted that the calls to these "partial templates" are passed
 the argument "." (dot).  This is set to the root object of the JSON content
-(see `pages/template/index.json` above) at the start of processing.  So
+(see `pages/post/index.json` above) at the start of processing.  So
 when the bootstrap template is reached, it will have access to the title
 and CSS page associated with this content.
 
 If we look at the definition of MISC_FOOTER in
-`pages/template/support/misc.tmpl`:
+`pages/support/misc.tmpl`:
 
 {% highlight html %}
 
@@ -912,7 +947,8 @@ engine the ability to avoid repeating yourself in the HTML is paramount.
 
 ## The static directory
 
-The output of pagegen, notably `static/en/web/post/index.html` in this lesson,
+The output of `gb seven5` (really `pagegen`),
+for example `static/en/web/post/index.html` in this lesson,
 is placed in the `static` subdirectory.  That directory _must_ be checked
 into git as it is the content your web server will respond with when
 queried for "/".  In other words, `static/en/web/post/index.html` will be
@@ -926,12 +962,23 @@ these variables is separated into subdirectories.
 
 ## Run and test the static files
 
-You should be comfortable enough now to build the fresno, migrate, and
-pagegen applications anytime, so we won't call it out anymore.
+You should be comfortable enough now to build the fresno application,
+the migrate application, and the gb seven5 extension anytime, so we won't call
+it out anymore.
 
 From now on you must assume that you should run `fresno` from the primary
-tutorial directory (`TUTROOT/src/tutorial` or the parent of `static`) because
-this is how your application will be run on production.
+tutorial directory (`TUTROOT`) because
+this is how your application will be run on production.  Go ahead and start
+a copy of fresno running now.
+
+{% highlight bash %}
+
+$ cd $TUTROOT
+$ fresno
+2016/05/10 10:20:00 DATABASE_URL found, connecting to postgres://iansmith@localhost:5433/fresno
+2016/05/10 10:20:00 [SERVE] (IsTest=true) waiting on :5000
+
+{% endhighlight %}
 
 You can view the `static/en/web/post/index.html`
 [index page](http://localhost:5000/en/web/post/index.html) in your web browser
@@ -941,7 +988,8 @@ and "/posts" are  equivalent; they correspond to the same content in
 detail later.
 
 > If you are getting a 404 error in the local case,
-> it is probably because you are not running Fresno in parent of `static`.
+> it is probably because you are not running fresno with the `STATIC_DIR`
+> set, or `STATIC_DIR` is set improperly.
 
 <a name="signup-form"></a>
 
@@ -969,8 +1017,8 @@ for the program.
 
 {% highlight bash %}
 
-$ cd $TUTROOT/src/tutorial/pages
-$ make
+$ cd $TUTROOT
+$ gb seven5 github.com/seven5/tutorial
 
 {% endhighlight %}
 
@@ -996,7 +1044,7 @@ page.
 ## HTML code
 
 In the `pages` directory you'll notice the
-`pages/template/signup.html` and corresponding `pages/template/signup.json`.
+`pages/signup.html` and corresponding `pages/signup.json`.
 
 We have exploited our "Don't Repeat Yourself" mantra here.  The code for
 the HTML page is:
@@ -1047,8 +1095,8 @@ the HTML page is:
 
 {% endhighlight %}
 
-Since the code for each of the fields is the same, we have factored it
-into its own small template in `pages/template/support/form.tmpl`.
+Since the code for each of the fields on the page is the same, we have factored it
+into its own small template in `pages/support/form.tmpl`.
 Then, we re-used that template by changing the JSON:
 
 {% highlight json %}
@@ -1095,39 +1143,43 @@ Then, we re-used that template by changing the JSON:
 Note that the HTML page references a different JSON object when invoking
 "FORM_5WIDE_TEXT" for each form element.
 
+You may find it enlighting to type some random text into the `pages/signup.html`,
+rebuild with `gb seven5 github.com/seven5/tutorial` and then reloading the page.
+
 ## Client-side code
 
 Let's look in a bit more detail at how the client-side Go code gets built.
 
 {% highlight bash %}
 
-$ cd $TUTROOT/src/tutorial/pages
-$ make clean
-[elided for space]
-$ make
-gopherjs build  -o  ../static/en/web/signup.js ../client/signup.go
-[other lines elided for space]
-$ make
-[gopherjs commands executed again]
+$ cd $TUTROOT
+$ gb seven5 github.com/seven5/tutorial
 
 {% endhighlight %}
 
-When the make target runs, it _always_ generates the code for the client-side
-code, using gopherjs to build javascript files such  as
-`static/en/web/signup.js` (and the matching `static/en/web/signup.js.map`
-file).   This is ok because it's quite fast, as gopherjs does the same
-type of rebuild-only-if-necessary that the standard Go tool does.  The
-make target is designed to give "fast feedback" when doing front-end
-development.  Just _leave Fresno running_ and then in another shell
-switch to the `pages` directory and use "make" to "build everything
-again".  Then you can just refresh your browser and you'll see the changes.
+When the Seven5 extension runs (it is `$TUTROOT/bin/gb-seven5`) it looks for
+go code in the directory `client`.  It is recommended that you keep the structure
+of the `client` and `pages` parallel, in other words the code in
+`pages/post/index.html` should load the resulting javascript from the go code
+that lives in `client/post/index.go`.
+
+Generally, go expects a directory contain a maximum of one "program" or
+`main()` function in the `main` package.  All of gopherjs, the go tool, and
+gb have this property.  This makes sense for most situations, but not for us
+because each _page_ needs to have a main.  So, the Seven5 extension walks all
+the go code contained in `client` directory and its subdirectories and
+looks for the `main()` function. Then it invokes the gopherjs compiler in a
+way that allows each file to be its own main.  You _can_ have shared support
+go packages, as we have with `client/uicommon`, and the Seven5 extension will
+handle this correctly so every main function can use them.
 
 ### Entry point
 
-The code for the client-side portion of this form is in `client/signup.go`.
+Returning to our discussion of the signup page, the code for the
+client-side portion of this form is in `client/signup.go`.
 
-A single HTML page, and its associated state, is represented as an instance of
-Seven5's
+A single HTML page, and its associated state, is represented as an instance
+of Seven5's
 [Application](https://gowalker.org/github.com/seven5/seven5/client#Application)
 interface.  There is only one method on Application, the Start() method.  This
 method is critical because Seven5 will do work to insure that this method will
@@ -1197,7 +1249,7 @@ around since the 1990s.  Thus, at any point in the code of `client/signup.go`
 the value read from signupPage.first.Get() will be the value that is
 currently in the corresponding text box on the screen.
 
-We can go the other direction.  The three fields of signupPage that end
+We can also go the other direction!  The three fields of signupPage that end
 in "Feedback" are used to compute the values of the feedback areas to the
 right of the text entry areas.  Again, Seven5 allows constraints to
 go "into" the DOM as well as come from it.  So, a call like
@@ -1332,11 +1384,12 @@ Gopherjs generates
 [Javascript source maps](https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k)
 that allows you to debug in the browser at the Go level.
 
-If you look at the developer console (see figure above) at the right of
-the "hello, world" you'll see "signup.go:57" in italics.  (The line
+If you look at the developer console in the figure above with the sign up
+page, at the right of
+the "hello, world" you'll see "signup.go:70".  (The line
 number may be slightly different in your version.)  You can click
 on it and go to the line in the source code.  Seven5 knows how to
-interpret the request to show you the source code based on your GOPATH
+interpret the request to show you the source code based on your `GOPATH`
 (set in the enable script).  You may find it interesting to look at the
 log messages generated by Fresno when you click on a link like this.
 
@@ -1358,9 +1411,10 @@ console, so pretty much _anything_ can be printed, although you'll be
 looking at the Javascript representation rather than the Go one.
 
 More interesting is to introduce a panic("foo") immediately after that print
-and then rebuild ("make" in the `pages` dir) the client-side code.  If you
+and then rebuild (`gb seven5 github.com/seven5/tutorial` in the `TUTROOT`)
+the client-side code.  If you
 have done this, you'll see something like this in your browser if you
-reload the page:
+reload the sign up page:
 
 <img src="/assets/img/panic_1.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%; float:right;">
@@ -1370,16 +1424,20 @@ is the stack trace at the moment of the panic, with the panic error at the
 top. You'll usually see a mixture of Go and Javascript code in the stack,
 since the compiler is generating numerous functions to support your Go code.
 Although you can look at the Javascript code, don't bother, it was generated
-by a machine.  The Go source code (italics at the right) is more interesting:
+by a machine.  The Go source code (indicated by the arrow in this figure) is
+more interesting:
 
 <img src="/assets/img/panic_2.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%; float:right;">
 
-Once you click through a link, you'll need to "go back" from the source code
-to the stack.  This is often confusing for people new to debugging inside the
-browser, so I've highlighted the little "go back" button that affects the
-debugging/error console.  If you click on the "app.go" link in that stack
-trace, you'll be dumped into the Seven5 source code.
+Once you click through the name of a go source code file,
+you'll need to "go back" from the source code
+to the error console and stack trace.  There is a "back" button on the debugging
+are and you need to use this, not the browser "back" button at the top of the
+window.  This is often confusing for people new to debugging inside the
+browser.  If you click on the "app.go" link in that stack trace shown, you'll be
+dumped into the Seven5 source code--part of the tool, not part of the
+tutorial.
 
 ### Source debugging
 
@@ -1387,15 +1445,19 @@ trace, you'll be dumped into the Seven5 source code.
 alt="the signup page" style="border:1px solid black; width:50%;height:50%;">
 
 The next screenshot shows the source code if you clicked through the link
-in the previous screenshot labelled "signup.go:57".  You can click in the
-margin to the left of a line to put in a breakpoint.  Insert this
+in the previous screenshot labelled "signup.go:70".  You can click in the
+margin to the left of a line of code to put in a breakpoint.  Insert this
 breakpoint as shown and then reload the page.
 
 <img src="/assets/img/panic_4.png" hspace="30" vspace="30"
 alt="the signup page" style="border:1px solid black; width:50%;height:50%;float:right;">
 
-You will see a display somewhat like this one. You are now in the land of
-debuggers and most people familiar with them should recognize that they
+You will see a display somewhat like this one. If you are looking at javascript
+code, you may need to click on the stack trace at the left to get back to the
+"right place" in the go code.  
+
+You are now in the land of debuggers and most people familiar with them
+should recognize that they
 can single step, return from current function, etc.  The author doesn't
 find a lot of value in source debugging in a browser, but some people are
 really into debuggers so it seemed a bit callous to not share at least
@@ -1449,7 +1511,7 @@ were discussed in previous lessons.)  This is then sent to the server with
 AjaxPost(). The details of the Ajax call will be covered in a future
 lesson.
 
-## Server changes
+## Server-side of creating users
 
 The server side is more interesting.  As we pointed out in the lesson
 on wire types when discussing resources, in `freso/main.go` we have
@@ -1524,11 +1586,15 @@ func (self *UserRecordResource) PostQbs(i interface{}, pb s5.PBundle, q *qbs.Qbs
 
 ## Testing creating users
 
-You should be able to build the client side with "make" in `pages` and the
-server with `godep go install tutorial/fresno` in the main tutorial directory.
+If you previously added a panic to the signup page as we discussed in an earlier
+lesson on debugging, this would be a good time to remove it. You should be able
+to build the client side with
+`gb seven5 github.com/seven5/tutorial` (in `TUTROOT`) and the
+server with `gb build github.com/seven5/tutorial`.
+
 You can visit the new sign up page
 [here](http://localhost:5000/en/web/signup.html) if Fresno is running. You
-can create users by using the signup form.  You can create many users you log
+can create users by using the signup form.  You can create many users if you log
 out after creating each one.  You may find it interesting to return to the
 signup page when you are logged in; you'll have to manually enter the URL
 since the navigation bar will try to steer you away from this course of action.
@@ -1542,9 +1608,10 @@ will likely have noticed that the Seven5 programming model to this
 point was very clearly differentiated: REST services that communicate
 via APIs mounted at  /rest/resourcename or static files, mounted at /.
 
-Static files were served up in the usual way, with HTTP status
+Static files are served up in the usual way, with HTTP status
 code 304 allowing convenient caching, and requests to the APIs
-in /rest could not be cached as they were "hot".
+in /rest cannot be cached since they are "hot"--can change based on
+context of the call.
 
 Authentication creates a problem.  We are going to be forced to introduce
 two new "endpoints" in our URL space that are neither fish nor fowl:
@@ -1690,9 +1757,9 @@ You can compile a program called key2hex to do this:
 
 {% highlight bash %}
 
-$ cd $TUTROOT/src/tutorial
-$ godep go install github.com/seven5/seven5/key2hex
-$ Godeps/_workspace/bin/key2hex thisisanexample0
+$ cd $TUTROOT
+$ gb build github.com/seven5/seven5/key2hex
+$ key2hex thisisanexample0
 746869736973616e6578616d706c6530
 
 {% endhighlight %}
@@ -1939,7 +2006,7 @@ child list of the self.navRight element.  The parent's definition is:
 
 The call to NewHtmlId searches the DOM for *exactly one* tag of type
 "ul" with Id of "nav-right".  That tag is in the HTML code
-(`pages/template/support/page.tmpl`) that defines the template
+(`pages/support/page.tmpl`) that defines the template
 PAGE_NAV_BAR that is used for several of the pages:
 
 {% highlight html %}
@@ -1985,8 +2052,8 @@ can rebuild the code:
 
 {% highlight bash %}
 
-$ cd $TUTROOT/src/tutorial/pages
-$ make
+$ cd $TUTROOT
+$ gb seven5 github.com/seven5/tutorial
 
 {% endhighlight %}
 
@@ -2020,7 +2087,7 @@ to Fresno.
 alt="the signup page"
 style="border:1px solid black; width:80%;height:80%"/>
 
-> Don't forget to change your ul tag in `pages/template/support/page.tmpl`
+> Don't forget to change your ul tag in `pages/support/page.tmpl`
 > back and remove the "xxx" if you made that change in the previous lesson!
 
 The screenshot above shows the Log In button as enabled, but that does
@@ -2892,7 +2959,7 @@ of configuration related to StaticComponents:
 
 {% highlight go %}
 
-    // what do we do if given empty URL, note we use the SINGULAR here
+    // what do we do if given empty URL, note we use the PLURAL here
     homepage := s5.ComponentResult{
         Status: http.StatusMovedPermanently,
         Redir:  "/posts/index.html",
