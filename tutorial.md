@@ -134,8 +134,6 @@ $ cd $TUTROOT/src/github.com/seven5
 $ git clone https://github.com/seven5/tutorial.git
 $ git clone https://github.com/seven5/seven5.git
 $ git clone https://github.com/seven5/gb-seven5.git
-$ cd tutorial
-$ git checkout tutorial
 $ cat enable-tutorial.tmpl
 
 {% endhighlight %}
